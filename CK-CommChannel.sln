@@ -8,7 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{72DA97E4
 		Tests\TestHelper.config = Tests\TestHelper.config
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder/CodeCakeBuilder.csproj", "{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{407D6A87-6955-4F6D-A642-0EFAF97CE3A5}"
 	ProjectSection(SolutionItems) = preProject
@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 		.gitignore = .gitignore
 		NuGet.config = NuGet.config
+		appveyor.yml = appveyor.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{0C916C66-EFEA-427C-BAB2-CC33B8CD42E0}"
@@ -26,13 +27,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{0C916C66-EFE
 		Common\Doc\BasicCommands.png = Common\Doc\BasicCommands.png
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel", "CK.CommChannel\CK.CommChannel.csproj", "{FBD52250-C593-4479-9D10-6AE90E91CE23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel", "CK.CommChannel/CK.CommChannel.csproj", "{FBD52250-C593-4479-9D10-6AE90E91CE23}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Tests", "Tests\CK.CommChannel.Tests\CK.CommChannel.Tests.csproj", "{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Tests", "Tests/CK.CommChannel.Tests/CK.CommChannel.Tests.csproj", "{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Serial", "CK.CommChannel.Serial\CK.CommChannel.Serial.csproj", "{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Serial", "CK.CommChannel.Serial/CK.CommChannel.Serial.csproj", "{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.CommChannel.Serial.Tests", "Tests\CK.CommChannel.Serial.Tests\CK.CommChannel.Serial.Tests.csproj", "{EBB45D18-4393-4E81-8898-BA140BDADC35}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.CommChannel.Serial.Tests", "Tests/CK.CommChannel.Serial.Tests/CK.CommChannel.Serial.Tests.csproj", "{EBB45D18-4393-4E81-8898-BA140BDADC35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
