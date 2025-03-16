@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Linq;
@@ -61,10 +61,10 @@ public class MultipleWriterTests
             }
             else
             {
-                await FluentActions.Awaiting( async () =>
+                await Util.Awaitable( async () =>
                 {
                     await Task.WhenAll( senders );
-                } ).Should().ThrowAsync<InvalidOperationException>();
+                } ).ShouldThrowAsync<InvalidOperationException>();
             }
         }
         finally

@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Text;
@@ -54,12 +54,12 @@ public class LineMessageReaderTests
 
         var reader = new StringLineMessageReader( channel.Reader, Encoding.ASCII );
 
-        (await reader.ReadNextAsync()).Should().Be( "Message 1" );
-        (await reader.ReadNextAsync()).Should().Be( "Message 2" );
-        (await reader.ReadNextAsync()).Should().Be( "Message 3" );
-        (await reader.ReadNextAsync()).Should().Be( "Message 4" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 1" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 2" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 3" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 4" );
         await MessageSender.SendLineAsync( endPoint.Input, "Message 5" );
-        (await reader.ReadNextAsync()).Should().Be( "Message 5" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 5" );
     }
 
     [Test]
@@ -90,13 +90,13 @@ public class LineMessageReaderTests
             channel.Reader.CancelPendingRead();
         } );
 
-        (await reader.ReadNextAsync()).Should().BeNull();
+        (await reader.ReadNextAsync()).ShouldBeNull();
 
         await MessageSender.SendLineAsync( endPoint.Input, "Message 1" );
 
-        (await reader.ReadNextAsync()).Should().Be( "Message 1" );
+        (await reader.ReadNextAsync()).ShouldBe( "Message 1" );
 
-        reader.IsCompleted.Should().BeFalse();
+        reader.IsCompleted.ShouldBeFalse();
 
         _ = Task.Run( async () =>
         {
@@ -104,14 +104,14 @@ public class LineMessageReaderTests
             channel.Reader.CancelPendingRead();
         } );
 
-        (await reader.ReadNextAsync()).Should().BeNull();
-        reader.IsCompleted.Should().BeFalse();
+        (await reader.ReadNextAsync()).ShouldBeNull();
+        reader.IsCompleted.ShouldBeFalse();
 
         await MemoryChannel.DeallocateAsync( "Test" );
 
         // If AutoReconnect is true, we'll wait indefinitely since there's no timeout.
         channel.AutoReconnect = false;
-        await FluentActions.Awaiting( () => reader.ReadNextAsync().AsTask() ).Should().ThrowAsync<InvalidOperationException>();
+        await Util.Awaitable( () => reader.ReadNextAsync().AsTask() ).ShouldThrowAsync<InvalidOperationException>();
     }
 
     [Test]
@@ -142,9 +142,9 @@ public class LineMessageReaderTests
         await endPoint.Input.FlushAsync();
 
         TestHelper.Monitor.Info( "Waiting for ReadNextAsync to be Message 1." );
-        (await reader.ReadNextAsync()).Should().Be( "1" );
-        (await reader.ReadNextAsync()).Should().Be( "2" );
-        (await reader.ReadNextAsync()).Should().Be( "3" );
+        (await reader.ReadNextAsync()).ShouldBe( "1" );
+        (await reader.ReadNextAsync()).ShouldBe( "2" );
+        (await reader.ReadNextAsync()).ShouldBe( "3" );
         TestHelper.Monitor.Info( "Closing the end point in 150 ms." );
         _ = Task.Run( async () =>
         {
@@ -155,11 +155,16 @@ public class LineMessageReaderTests
         // If AutoReconnect is true, this will wait indefinitely since we have no timeout.
         channel.AutoReconnect = false;
         TestHelper.Monitor.Info( "Waiting for ReadNextAsync to be null (the empty message)." );
-        (await reader.ReadNextAsync()).Should().BeNull();
-        reader.IsCompleted.Should().BeTrue();
+        // Note: Race condition here.
+        // This MAY throw if the read is done on a ROSequence obtained before the close because
+        // AutoReconnect is false here.
+        // This is unfortunate (for this test) but "normal": when AutoReconnect is false, read or write
+        // exceptions bubble up to the caller.
+        (await reader.ReadNextAsync()).ShouldBeNull();
+        reader.IsCompleted.ShouldBeTrue();
 
-        (await reader.ReadNextAsync()).Should().BeNull();
-        reader.IsCompleted.Should().BeTrue();
+        (await reader.ReadNextAsync()).ShouldBeNull();
+        reader.IsCompleted.ShouldBeTrue();
     }
 
 }

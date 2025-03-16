@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -37,13 +37,13 @@ public class AutoReconnectionTests
         MemoryChannelConfiguration config1 = new MemoryChannelConfiguration { EndPointName = "Test", AutoReconnect = true };
         var channel1 = CommunicationChannel.Create( TestHelper.Monitor, config1 );
         await Task.Delay( 100, cancel );
-        channel1.ConnectionStatus.Should().Be( ConnectionAvailability.Connected );
+        channel1.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
         var tracker1 = new ConnectionAvailabilityTracker( channel1 );
 
         MemoryChannelConfiguration config2 = new MemoryChannelConfiguration { EndPointName = "Test", AutoReconnect = true, Reverted = true };
         var channel2 = CommunicationChannel.Create( TestHelper.Monitor, config2 );
         await Task.Delay( 100, cancel );
-        channel2.ConnectionStatus.Should().Be( ConnectionAvailability.Connected );
+        channel2.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
         var tracker2 = new ConnectionAvailabilityTracker( channel2 );
 
         try
@@ -97,18 +97,18 @@ public class AutoReconnectionTests
                 dupCount += CheckMissingMessagesAndGetDuplicateMessageCount( messages2, expectedMessages, channel2 );
                 CheckEvents( tracker2.Events, failure );
 
-                dupCount.Should().Be( 0, "There must never be any duplicates." );
+                dupCount.ShouldBe( 0, "There must never be any duplicates." );
             }
 
             static void CheckEvents( ConnectionAvailability[] events, FailureConfiguration f )
             {
                 if( f != FailureConfiguration.Never )
                 {
-                    events.Should().NotBeEmpty();
+                    events.ShouldNotBeEmpty();
                 }
                 else
                 {
-                    events.Should().BeEmpty();
+                    events.ShouldBeEmpty();
                 }
             }
 

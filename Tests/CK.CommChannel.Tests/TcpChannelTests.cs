@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using FluentAssertions;
+using Shouldly;
 using static CK.Testing.MonitorTestHelper;
 using System.Threading;
 
@@ -43,10 +43,10 @@ public class TcpChannelTests
 
         byte[] response = new byte[request.Length];
         int readBytes = await stream.ReadAsync( response, cancel );
-        readBytes.Should().Be( request.Length );
+        readBytes.ShouldBe( request.Length );
 
         string responseStr = Encoding.UTF8.GetString( response );
-        responseStr.Should().Be( "Hello, server!" );
+        responseStr.ShouldBe( "Hello, server!" );
     }
 
     [Test]
@@ -66,10 +66,10 @@ public class TcpChannelTests
         await cc.Writer.WriteAsync( request, cancel );
 
         var readResult = await cc.Reader.ReadAsync( cancel );
-        readResult.Buffer.Length.Should().Be( request.Length );
+        readResult.Buffer.Length.ShouldBe( request.Length );
 
         string responseStr = Encoding.UTF8.GetString( readResult.Buffer );
-        responseStr.Should().Be( "Hello, server!" );
+        responseStr.ShouldBe( "Hello, server!" );
     }
 
     [Test]
@@ -97,10 +97,10 @@ public class TcpChannelTests
         await cc.Writer.WriteAsync( request, cancel );
 
         var readResult = await cc.Reader.ReadAsync( cancel );
-        readResult.Buffer.Length.Should().Be( request.Length );
+        readResult.Buffer.Length.ShouldBe( request.Length );
 
         string responseStr = Encoding.UTF8.GetString( readResult.Buffer );
-        responseStr.Should().Be( "Hello, server!" );
+        responseStr.ShouldBe( "Hello, server!" );
 
         // Change config
 
@@ -115,10 +115,10 @@ public class TcpChannelTests
         await cc.Writer.WriteAsync( request, cancel );
 
         readResult = await cc.Reader.ReadAsync( cancel );
-        readResult.Buffer.Length.Should().Be( request.Length );
+        readResult.Buffer.Length.ShouldBe( request.Length );
 
         responseStr = Encoding.UTF8.GetString( readResult.Buffer );
-        responseStr.Should().Be( "Hello, server!" );
+        responseStr.ShouldBe( "Hello, server!" );
 
         // Change config
 
@@ -133,9 +133,9 @@ public class TcpChannelTests
         await cc.Writer.WriteAsync( request, cancel );
 
         readResult = await cc.Reader.ReadAsync( cancel );
-        readResult.Buffer.Length.Should().Be( request.Length );
+        readResult.Buffer.Length.ShouldBe( request.Length );
 
         responseStr = Encoding.UTF8.GetString( readResult.Buffer );
-        responseStr.Should().Be( "Hello, server!" );
+        responseStr.ShouldBe( "Hello, server!" );
     }
 }

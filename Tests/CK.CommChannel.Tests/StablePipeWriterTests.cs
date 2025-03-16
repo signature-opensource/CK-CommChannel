@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -26,11 +26,11 @@ public partial class StablePipeWriterTests
         await pipe.Reader.CompleteAsync();
 
         var r = await writer.FlushAsync( default );
-        r.IsCompleted.Should().BeTrue();
-        writer.IsCompleted.Should().BeTrue();
+        r.IsCompleted.ShouldBeTrue();
+        writer.IsCompleted.ShouldBeTrue();
 
         r = await writer.FlushAsync( default );
-        r.IsCompleted.Should().BeTrue();
+        r.IsCompleted.ShouldBeTrue();
     }
 
     [Test]
@@ -43,23 +43,23 @@ public partial class StablePipeWriterTests
         writer.SetWriter( slow );
 
         MessageSender.WriteLine( writer, "Line..." );
-        await FluentActions.Awaiting( () => writer.FlushAsync( default ).AsTask() ).Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
         MessageSender.WriteLine( writer, "...will be here." );
-        await FluentActions.Awaiting( () => writer.FlushAsync( default ).AsTask() ).Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
         MessageSender.WriteLine( writer, "Because the inner buffer is kept." );
-        await FluentActions.Awaiting( () => writer.FlushAsync( default ).AsTask() ).Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
         slow.Delay = 0;
         await MessageSender.SendLineAsync( writer, "Hello!" );
-        await FluentActions.Awaiting( () => writer.FlushAsync( default ).AsTask() ).Should().NotThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldNotThrowAsync();
 
         var lineReader = new StringLineMessageReader( pipe.Reader, Encoding.ASCII );
-        (await lineReader.ReadNextAsync()).Should().Be( "Line..." );
-        (await lineReader.ReadNextAsync()).Should().Be( "...will be here." );
-        (await lineReader.ReadNextAsync()).Should().Be( "Because the inner buffer is kept." );
-        (await lineReader.ReadNextAsync()).Should().Be( "Hello!" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line..." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "...will be here." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Because the inner buffer is kept." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Hello!" );
     }
 
     [Test]
@@ -74,26 +74,26 @@ public partial class StablePipeWriterTests
 
         MessageSender.WriteLine( writer, "Line..." );
         var r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeTrue();
+        r.IsCanceled.ShouldBeTrue();
 
         MessageSender.WriteLine( writer, "...will be here." );
         r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeTrue();
+        r.IsCanceled.ShouldBeTrue();
 
         MessageSender.WriteLine( writer, "Because the inner buffer is kept." );
         r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeTrue();
+        r.IsCanceled.ShouldBeTrue();
 
         slow.Delay = 0;
         await MessageSender.SendLineAsync( writer, "Hello!" );
         r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeFalse();
+        r.IsCanceled.ShouldBeFalse();
 
         var lineReader = new StringLineMessageReader( pipe.Reader, Encoding.ASCII );
-        (await lineReader.ReadNextAsync()).Should().Be( "Line..." );
-        (await lineReader.ReadNextAsync()).Should().Be( "...will be here." );
-        (await lineReader.ReadNextAsync()).Should().Be( "Because the inner buffer is kept." );
-        (await lineReader.ReadNextAsync()).Should().Be( "Hello!" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line..." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "...will be here." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Because the inner buffer is kept." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Hello!" );
     }
 
     [Test]
@@ -107,16 +107,16 @@ public partial class StablePipeWriterTests
         MessageSender.WriteLine( writer, "Line..." );
         writer.CancelPendingFlush();
         var r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeTrue();
+        r.IsCanceled.ShouldBeTrue();
 
         r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeFalse();
+        r.IsCanceled.ShouldBeFalse();
 
         _ = MessageSender.SendLineAsync( writer, "<End>" );
 
         var lineReader = new StringLineMessageReader( pipe.Reader, Encoding.ASCII );
-        (await lineReader.ReadNextAsync()).Should().Be( "Line..." );
-        (await lineReader.ReadNextAsync()).Should().Be( "<End>" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line..." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "<End>" );
     }
 
     [Test]
@@ -131,13 +131,13 @@ public partial class StablePipeWriterTests
         writer.CancelPendingFlush();
         // One wait is enough and it is not canceled.
         var r = await writer.FlushAsync( default );
-        r.IsCanceled.Should().BeFalse();
+        r.IsCanceled.ShouldBeFalse();
 
         _ = MessageSender.SendLineAsync( writer, "<End>" );
 
         var lineReader = new StringLineMessageReader( pipe.Reader, Encoding.ASCII );
-        (await lineReader.ReadNextAsync()).Should().Be( "Line..." );
-        (await lineReader.ReadNextAsync()).Should().Be( "<End>" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line..." );
+        (await lineReader.ReadNextAsync()).ShouldBe( "<End>" );
     }
 
     [Test]
@@ -153,7 +153,7 @@ public partial class StablePipeWriterTests
         await MessageSender.SendLineAsync( writer, "Line...in one write." );
         await MessageSender.SendLineAsync( writer, "ABCDEFGH", bytePerByte: true );
 
-        linesSent.Should().BeEquivalentTo( new[] { "Line...in one write.\r\n", "A", "B", "C", "D", "E", "F", "G", "H", "\r", "\n" } );
+        linesSent.ShouldBe( new[] { "Line...in one write.\r\n", "A", "B", "C", "D", "E", "F", "G", "H", "\r", "\n" } );
 
         void OnDataWritten( ReadOnlySpan<byte> span, StablePipeWriter arg )
         {

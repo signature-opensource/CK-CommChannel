@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -47,7 +47,7 @@ public class DelimitedMessageHandlerTests
                 ++Number;
                 return new ValueTask<bool>( false );
             }
-            message.Should().Be( $"Message {Number++}" );
+            message.ShouldBe( $"Message {Number++}" );
             return new ValueTask<bool>( true );
         }
 
@@ -77,15 +77,15 @@ public class DelimitedMessageHandlerTests
         var loop = new ExpectedNumberedMessagesHandler( channel.Reader );
 
         loop.StartReadLoop( maxMessage: 4 );
-        (await loop.StoppedReason).Should().Be( MessageHandlerCompletionReason.MaxMessageNumber );
+        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
 
-        loop.Number.Should().Be( 4 );
+        loop.Number.ShouldBe( 4 );
 
         await MessageSender.SendLineAsync( endPoint.Input, "#Stop Loop!", bytePerByte, ";" );
 
         loop.StartReadLoop();
-        (await loop.StoppedReason).Should().Be( MessageHandlerCompletionReason.ProcessMessage );
-        loop.Number.Should().Be( 5 );
+        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
+        loop.Number.ShouldBe( 5 );
 
         await MemoryChannel.DeallocateAsync( "Test" );
     }
@@ -108,15 +108,15 @@ public class DelimitedMessageHandlerTests
         var loop = new ExpectedNumberedMessagesHandler( channel.Reader, startDelimiter: (byte)'#', endDelimiter: StringLineMessageReader.CRLF );
 
         loop.StartReadLoop( maxMessage: 4 );
-        (await loop.StoppedReason).Should().Be( MessageHandlerCompletionReason.MaxMessageNumber );
+        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
 
-        loop.Number.Should().Be( 4 );
+        loop.Number.ShouldBe( 4 );
 
         await MessageSender.SendLineAsync( endPoint.Input, "#Stop Loop!" );
 
         loop.StartReadLoop();
-        (await loop.StoppedReason).Should().Be( MessageHandlerCompletionReason.ProcessMessage );
-        loop.Number.Should().Be( 5 );
+        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
+        loop.Number.ShouldBe( 5 );
 
         await MemoryChannel.DeallocateAsync( "Test" );
     }

@@ -5,9 +5,10 @@ using System.IO.Ports;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
+using CK.Core;
 
 namespace CK.CommChannel.Serial.Tests;
 
@@ -69,8 +70,8 @@ public class SerialPortChannelTests
             // Read on A
             result = await channel.Reader.ReadAsync();
 
-            result.Buffer.Length.Should().Be( HelloBuffer.Length, $"There should have been {HelloBuffer.Length} bytes written on {nameof( pairedPort )}." );
-            result.Buffer.ToArray().Should().BeEquivalentTo( HelloBuffer, $"Hello should have been written on {nameof( pairedPort )}" );
+            result.Buffer.Length.ShouldBe( HelloBuffer.Length, $"There should have been {HelloBuffer.Length} bytes written on {nameof( pairedPort )}." );
+            result.Buffer.ToArray().ShouldBe( HelloBuffer, $"Hello should have been written on {nameof( pairedPort )}" );
             channel.Reader.AdvanceTo( result.Buffer.End );
 
             // Write on B
@@ -78,8 +79,8 @@ public class SerialPortChannelTests
             // Read on A
             result = await channel.Reader.ReadAsync();
 
-            result.Buffer.Length.Should().Be( WorldBuffer.Length, $"There should have been {WorldBuffer.Length} bytes written on {nameof( pairedPort )}." );
-            result.Buffer.ToArray().Should().BeEquivalentTo( WorldBuffer, $"World should have been written on {nameof( pairedPort )}" );
+            result.Buffer.Length.ShouldBe( WorldBuffer.Length, $"There should have been {WorldBuffer.Length} bytes written on {nameof( pairedPort )}." );
+            result.Buffer.ToArray().ShouldBe( WorldBuffer, $"World should have been written on {nameof( pairedPort )}" );
             channel.Reader.AdvanceTo( result.Buffer.End );
         }
     }
@@ -110,8 +111,8 @@ public class SerialPortChannelTests
             // Read on B
             int readBytes = await pairedPort.BaseStream.ReadAsync( buffer.AsMemory( 0, buffer.Length ) );
 
-            readBytes.Should().Be( HelloBuffer.Length, $"There should have been {HelloBuffer.Length} bytes written on {nameof( channel )}." );
-            buffer[..HelloBuffer.Length].Should().BeEquivalentTo( HelloBuffer, $"Hello should have been written on {nameof( channel )}" );
+            readBytes.ShouldBe( HelloBuffer.Length, $"There should have been {HelloBuffer.Length} bytes written on {nameof( channel )}." );
+            buffer[..HelloBuffer.Length].ShouldBe( HelloBuffer, $"Hello should have been written on {nameof( channel )}" );
 
             // Write on A
             await channel.Writer.WriteAsync( WorldBuffer );
@@ -119,8 +120,8 @@ public class SerialPortChannelTests
             // Read on B
             readBytes = await pairedPort.BaseStream.ReadAsync( buffer.AsMemory( 0, buffer.Length ) );
 
-            readBytes.Should().Be( WorldBuffer.Length, $"There should have been {WorldBuffer.Length} bytes written on {nameof( channel )}." );
-            buffer[..WorldBuffer.Length].Should().BeEquivalentTo( WorldBuffer, $"World should have been written on {nameof( channel )}" );
+            readBytes.ShouldBe( WorldBuffer.Length, $"There should have been {WorldBuffer.Length} bytes written on {nameof( channel )}." );
+            buffer[..WorldBuffer.Length].ShouldBe( WorldBuffer, $"World should have been written on {nameof( channel )}" );
         }
     }
 
@@ -142,11 +143,7 @@ public class SerialPortChannelTests
         {
             var cts = new CancellationTokenSource( TimeSpan.FromMilliseconds( 500 ) );
             // Read on A
-            await FluentActions.Awaiting( async () =>
-            {
-                // ReSharper disable AccessToDisposedClosure
-                await channel.Reader.ReadAsync( cts.Token );
-            } ).Should().ThrowAsync<OperationCanceledException>();
+            await Util.Awaitable( () => channel.Reader.ReadAsync( cts.Token ).AsTask() ).ShouldThrowAsync<OperationCanceledException>();
         }
     }
 
