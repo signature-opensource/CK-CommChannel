@@ -1,0 +1,75 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{72DA97E4-D00C-4960-8D63-A41CFBF5835B}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\TestHelper.config = Tests\TestHelper.config
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{407D6A87-6955-4F6D-A642-0EFAF97CE3A5}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitlab-ci.yml = .gitlab-ci.yml
+		README.md = README.md
+		RepositoryInfo.xml = RepositoryInfo.xml
+		Directory.Build.props = Directory.Build.props
+		.gitignore = .gitignore
+		NuGet.config = NuGet.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{0C916C66-EFEA-427C-BAB2-CC33B8CD42E0}"
+	ProjectSection(SolutionItems) = preProject
+		Common\Doc\BasicCommands.png = Common\Doc\BasicCommands.png
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel", "CK.CommChannel\CK.CommChannel.csproj", "{FBD52250-C593-4479-9D10-6AE90E91CE23}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Tests", "Tests\CK.CommChannel.Tests\CK.CommChannel.Tests.csproj", "{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.CommChannel.Serial", "CK.CommChannel.Serial\CK.CommChannel.Serial.csproj", "{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.CommChannel.Serial.Tests", "Tests\CK.CommChannel.Serial.Tests\CK.CommChannel.Serial.Tests.csproj", "{EBB45D18-4393-4E81-8898-BA140BDADC35}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D17E97BF-A62C-481D-B622-6D6EC2F7F0A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBD52250-C593-4479-9D10-6AE90E91CE23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBD52250-C593-4479-9D10-6AE90E91CE23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBD52250-C593-4479-9D10-6AE90E91CE23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBD52250-C593-4479-9D10-6AE90E91CE23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCA3DC4B-2ED2-4200-8C2A-F722DCB7E223}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBB45D18-4393-4E81-8898-BA140BDADC35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBB45D18-4393-4E81-8898-BA140BDADC35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBB45D18-4393-4E81-8898-BA140BDADC35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBB45D18-4393-4E81-8898-BA140BDADC35}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0C916C66-EFEA-427C-BAB2-CC33B8CD42E0} = {407D6A87-6955-4F6D-A642-0EFAF97CE3A5}
+		{0F2EB48B-9D1D-41C4-889E-25CA3F5FD41D} = {72DA97E4-D00C-4960-8D63-A41CFBF5835B}
+		{EBB45D18-4393-4E81-8898-BA140BDADC35} = {72DA97E4-D00C-4960-8D63-A41CFBF5835B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FDD08DC2-8897-4301-8172-ACC41D1FF754}
+	EndGlobalSection
+EndGlobal
