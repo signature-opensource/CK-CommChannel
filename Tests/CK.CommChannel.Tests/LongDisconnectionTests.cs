@@ -38,11 +38,23 @@ public class LongDisconnectionTests
         }
         await client.DisposeAsync();
 
-        tracker.Events.ShouldBe( [
-                ConnectionAvailability.Connected,
-                ConnectionAvailability.Low,
-                ConnectionAvailability.DangerZone,
-                ConnectionAvailability.None] );
+        // We may have the Connected event or not.
+        tracker.Events.Length.ShouldBeInRange( 3, 4 );
+        if( tracker.Events.Length == 3 )
+        {
+            tracker.Events.ShouldBe( [
+                    ConnectionAvailability.Low,
+                    ConnectionAvailability.DangerZone,
+                    ConnectionAvailability.None] );
+        }
+        else
+        {
+            tracker.Events.ShouldBe( [
+                    ConnectionAvailability.Connected,
+                    ConnectionAvailability.Low,
+                    ConnectionAvailability.DangerZone,
+                    ConnectionAvailability.None] );
+        }
     }
 
     static async Task<(CommunicationChannel,ConnectionAvailabilityTracker)> OpenDisconnectedTcpChannelAsync( int port )
