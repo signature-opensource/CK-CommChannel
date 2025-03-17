@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Net;
@@ -20,7 +20,7 @@ public class LongDisconnectionTests
                                                                                      .ConfigureAwait( false );
         var writer = new StringLineMessageWriter( client.Writer, Encoding.UTF8 );
 
-        client.ConnectionStatus.Should().Be( ConnectionAvailability.Connected );
+        client.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
 
         TestHelper.Monitor.Info( "The first write doesn't detect anything. Why?" );
         await writer.WriteAsync( $"No more Server here... n°1.", default );
@@ -28,8 +28,8 @@ public class LongDisconnectionTests
         TestHelper.Monitor.Info( "The second one receives an IOException. (TimeOut: 200ms)" );
         // The call is now waiting for a new channel implementation.
         // We need a timeout to exit.
-        await FluentActions.Awaiting( () => writer.WriteAsync( $"No more Server here... n°2.", default, timeout: 200 ).AsTask() )
-            .Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => writer.WriteAsync( $"No more Server here... n°2.", default, timeout: 200 ).AsTask() )
+            .ShouldThrowAsync<TimeoutException>();
 
         while( client.ConnectionStatus != ConnectionAvailability.None )
         {
@@ -38,7 +38,7 @@ public class LongDisconnectionTests
         }
         await client.DisposeAsync();
 
-        tracker.Events.Should().BeEquivalentTo( [
+        tracker.Events.ShouldBe( [
                 ConnectionAvailability.Connected,
                 ConnectionAvailability.Low,
                 ConnectionAvailability.DangerZone,
@@ -67,14 +67,14 @@ public class LongDisconnectionTests
         TestHelper.Monitor.Info( "Check that the Server can talk to the Client." );
         {
             await serverSocket.SendAsync( Encoding.UTF8.GetBytes( "Server => Client.\r\n" ), SocketFlags.None ).ConfigureAwait( false );
-            (await clientReader.ReadNextAsync().ConfigureAwait( false )).Should().Be( "Server => Client." );
+            (await clientReader.ReadNextAsync().ConfigureAwait( false )).ShouldBe( "Server => Client." );
         }
         TestHelper.Monitor.Info( "Check that Client can talk to the Server." );
         {
             await client.Writer.WriteAsync( Encoding.UTF8.GetBytes( "Client => Server.\r\n" ) ).ConfigureAwait( false );
             var buffer = new byte[256];
             int lenRead = await serverSocket.ReceiveAsync( buffer.AsMemory(), SocketFlags.None ).ConfigureAwait( false );
-            Encoding.UTF8.GetString( buffer, 0, lenRead ).Should().Be( "Client => Server.\r\n" );
+            Encoding.UTF8.GetString( buffer, 0, lenRead ).ShouldBe( "Client => Server.\r\n" );
         }
         TestHelper.Monitor.Info( "Dispose the Server socket." );
         serverSocket.Dispose();

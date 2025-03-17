@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
@@ -66,6 +66,6 @@ public class ExplicitSerialTestsTests
         dumper.StartReadLoop( maxMessages );
         var r = await dumper.StoppedReason;
         TestHelper.Monitor.Info( $"Read loop stopped: {r}" );
-        r.Should().Match( r => r == MessageHandlerCompletionReason.MaxMessageNumber || r == MessageHandlerCompletionReason.ReadTimeout );
+        r.ShouldMatch( r => r == MessageHandlerCompletionReason.MaxMessageNumber || r == MessageHandlerCompletionReason.ReadTimeout );
     }
 }

@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Buffers;
@@ -31,14 +31,14 @@ public class MemoryChannelTests
 
         var readResult = await channel.Reader.ReadAsync();
         var buffer = readResult.Buffer;
-        Match( ref buffer, HelloBuffer ).Should().BeTrue();
+        Match( ref buffer, HelloBuffer ).ShouldBeTrue();
         channel.Reader.AdvanceTo( buffer.Start );
 
         await endPoint.Input.WriteAsync( WorldBuffer );
 
         readResult = await channel.Reader.ReadAsync();
         buffer = readResult.Buffer;
-        Match( ref buffer, WorldBuffer ).Should().BeTrue();
+        Match( ref buffer, WorldBuffer ).ShouldBeTrue();
         channel.Reader.AdvanceTo( buffer.Start );
 
         await endPoint.Input.CompleteAsync();
@@ -46,7 +46,7 @@ public class MemoryChannelTests
         // If AutoReconnect is true, this waits indefinitely since we have no timeout.
         channel.AutoReconnect = false;
         readResult = await channel.Reader.ReadAsync();
-        readResult.IsCompleted.Should().BeTrue();
+        readResult.IsCompleted.ShouldBeTrue();
 
         await MemoryChannel.DeallocateAsync( "Test" );
     }
@@ -83,8 +83,8 @@ public class MemoryChannelTests
 
         // Reading without any inputs: the DefaultReadTimeout = 100 must trigger.
         var sw = Stopwatch.StartNew();
-        await FluentActions.Awaiting( () => channel.Reader.ReadAsync().AsTask() ).Should().ThrowAsync<TimeoutException>();
-        sw.ElapsedMilliseconds.Should().BeLessThan( 150 );
+        await Util.Awaitable( () => channel.Reader.ReadAsync().AsTask() ).ShouldThrowAsync<TimeoutException>();
+        sw.ElapsedMilliseconds.ShouldBeLessThan( 150 );
 
         // Reading with 500 ms: this overrides the default.
         sw.Restart();
@@ -94,16 +94,16 @@ public class MemoryChannelTests
             await Task.Delay( 250 + 30 );
             await endPoint.Input.WriteAsync( HelloBuffer );
             var result = await read;
-            sw.ElapsedMilliseconds.Should().BeGreaterThan( 250 );
-            result.Buffer.ToArray().Should().BeEquivalentTo( HelloBuffer );
+            sw.ElapsedMilliseconds.ShouldBeGreaterThan( 250 );
+            result.Buffer.ToArray().ShouldBe( HelloBuffer );
             channel.Reader.AdvanceTo( result.Buffer.End );
         }
         sw.Restart();
         // A cancelable token skips the DefaultReadTimeout and throws an OperationCanceledException.
         using( var cts = new CancellationTokenSource( 300 ) )
         {
-            await FluentActions.Awaiting( () => channel.Reader.ReadAsync( cts.Token ).AsTask() ).Should().ThrowAsync<OperationCanceledException>();
-            sw.ElapsedMilliseconds.Should().BeGreaterThan( 300 - 20 );
+            await Util.Awaitable( () => channel.Reader.ReadAsync( cts.Token ).AsTask() ).ShouldThrowAsync<OperationCanceledException>();
+            sw.ElapsedMilliseconds.ShouldBeGreaterThan( 300 - 20 );
         }
 
         await MemoryChannel.DeallocateAsync( "Test" );
@@ -133,7 +133,7 @@ public class MemoryChannelTests
                 monitor.Info( "Receiving data" );
                 var r = await channel2.Reader.ReadAsync();
                 monitor.Info( "Received data" );
-                r.Buffer.Length.Should().Be( 3 );
+                r.Buffer.Length.ShouldBe( 3 );
                 mre.Set();
             } );
 
@@ -147,7 +147,7 @@ public class MemoryChannelTests
 
             TestHelper.Monitor.Info( "Waiting" );
             mre.Wait(1000);
-            mre.IsSet.Should().BeTrue();
+            mre.IsSet.ShouldBeTrue();
         }
         finally
         {

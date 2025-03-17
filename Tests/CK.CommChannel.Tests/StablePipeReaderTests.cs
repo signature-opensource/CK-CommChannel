@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.IO.Pipelines;
@@ -28,8 +28,8 @@ public class StablePipeReaderTests
         await Task.Delay( 1000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
         writeStop.Cancel();
-        (await w).Should().BeNull();
-        (await r).Should().BeNull();
+        (await w).ShouldBeNull();
+        (await r).ShouldBeNull();
     }
 
     [Test]
@@ -41,17 +41,17 @@ public class StablePipeReaderTests
         reader.DefaultTimeout = 35;
 
         reader.SetReader( pipe.Reader );
-        await FluentActions.Awaiting( () => reader.ReadAsync( default ).AsTask() ).Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => reader.ReadAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
-        await FluentActions.Awaiting( () => reader.ReadAsync( default ).AsTask() ).Should().ThrowAsync<TimeoutException>();
+        await Util.Awaitable( () => reader.ReadAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
         await MessageSender.SendLineAsync( pipe.Writer, "Hello" );
-        await FluentActions.Awaiting( async () =>
+        await Util.Awaitable( async () =>
         {
             var r = await reader.ReadAsync( default );
             reader.AdvanceTo( r.Buffer.End );
         }
-        ).Should().NotThrowAsync();
+        ).ShouldNotThrowAsync();
         await reader.CompleteAsync();
     }
 
@@ -71,11 +71,11 @@ public class StablePipeReaderTests
 
         var lineReader = new StringLineMessageReader( reader, Encoding.ASCII );
 
-        (await lineReader.ReadNextAsync()).Should().BeNull( "The EmptyMessage of the StringLineMessageReader is null." );
+        (await lineReader.ReadNextAsync()).ShouldBeNull( "The EmptyMessage of the StringLineMessageReader is null." );
 
         slow.Delay = 0;
-        (await lineReader.ReadNextAsync()).Should().Be( "Line 1" );
-        (await lineReader.ReadNextAsync()).Should().Be( "Line 2" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line 1" );
+        (await lineReader.ReadNextAsync()).ShouldBe( "Line 2" );
     }
 
 
@@ -91,11 +91,11 @@ public class StablePipeReaderTests
         await pipe.Writer.CompleteAsync();
         await pipe.Reader.CompleteAsync();
         var r = await rT;
-        r.IsCompleted.Should().BeTrue();
-        reader.IsCompleted.Should().BeTrue();
+        r.IsCompleted.ShouldBeTrue();
+        reader.IsCompleted.ShouldBeTrue();
 
         r = await reader.ReadAsync( default );
-        r.IsCompleted.Should().BeTrue();
+        r.IsCompleted.ShouldBeTrue();
     }
 
     [TestCase( true, 0 )]
@@ -114,9 +114,9 @@ public class StablePipeReaderTests
         await Task.Delay( 2000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
         writeStop.Cancel();
-        (await w).Should().BeNull();
-        (await r).Should().BeNull();
-        (await k).Should().BeNull();
+        (await w).ShouldBeNull();
+        (await r).ShouldBeNull();
+        (await k).ShouldBeNull();
     }
 
     [TestCase( true, 42 )]
@@ -136,10 +136,10 @@ public class StablePipeReaderTests
         await Task.Delay( 2000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
         writeStop.Cancel();
-        (await w).Should().BeNull();
-        (await r).Should().BeNull();
-        (await k).Should().BeNull();
-        (await c).Should().BeNull();
+        (await w).ShouldBeNull();
+        (await r).ShouldBeNull();
+        (await k).ShouldBeNull();
+        (await c).ShouldBeNull();
     }
 
     [Test]
@@ -158,8 +158,8 @@ public class StablePipeReaderTests
 
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
         writeStop.Cancel();
-        (await w).Should().BeNull();
-        (await r).Should().BeNull();
+        (await w).ShouldBeNull();
+        (await r).ShouldBeNull();
     }
 
     [Test]
@@ -176,8 +176,8 @@ public class StablePipeReaderTests
 
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
         writeStop.Cancel();
-        (await w).Should().BeNull();
-        (await r).Should().BeNull();
+        (await w).ShouldBeNull();
+        (await r).ShouldBeNull();
     }
 
     static Task<Exception?> StartReadingMessagesAsync( StablePipeReader reader, bool receiveAllMessages = true )
@@ -195,7 +195,7 @@ public class StablePipeReaderTests
                     var result = await lineReader.ReadNextAsync();
                     if( result != null )
                     {
-                        result.Should().StartWith( "Message " );
+                        result.ShouldStartWith( "Message " );
                         monitor.Trace( $"Received line: '{result}'." );
 
                         var num = int.Parse( result.AsSpan( 8 ) );
