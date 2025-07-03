@@ -14,7 +14,6 @@ public class LineMessageReaderTests
     [Test]
     public async Task Pipe_simple_reading_lines_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( Pipe_simple_reading_lines_Async ) );
         var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
         try
         {
@@ -29,7 +28,6 @@ public class LineMessageReaderTests
     [Test]
     public async Task NetworkStream_simple_reading_lines_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( NetworkStream_simple_reading_lines_Async ) );
         var endPoint = await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" );
         try
         {
@@ -117,7 +115,6 @@ public class LineMessageReaderTests
     [Test]
     public async Task Pipe_completing_returns_the_EmptyMessage_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( Pipe_completing_returns_the_EmptyMessage_Async ) );
         var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
         await CompleteOrDisposeTestAsync( endPoint );
     }
@@ -125,7 +122,6 @@ public class LineMessageReaderTests
     [Test]
     public async Task NetworkStream_disposing_returns_the_EmptyMessage_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( NetworkStream_disposing_returns_the_EmptyMessage_Async ) );
         var endPoint = await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" );
         await CompleteOrDisposeTestAsync( endPoint );
     }

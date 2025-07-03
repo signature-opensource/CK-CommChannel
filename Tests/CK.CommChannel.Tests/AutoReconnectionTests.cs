@@ -28,7 +28,6 @@ public class AutoReconnectionTests
     public async Task AutoReconnection_works_Async( int seed, string delimitedMessages, FailureConfiguration failure, string channelType, CancellationToken cancel )
     {
         bool usePipe = channelType == "UsePipe";
-        using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( AutoReconnection_works_Async )}({seed},{delimitedMessages},{failure},{channelType})" );
 
         var endPoint = usePipe
                         ? MemoryChannel.AllocatePipeChannel( "Test" )

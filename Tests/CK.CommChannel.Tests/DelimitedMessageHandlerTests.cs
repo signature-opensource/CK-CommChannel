@@ -67,7 +67,6 @@ public class DelimitedMessageHandlerTests
     [TestCase( SendGarbageMode.WithViciousGarbage, true )]
     public async Task handling_messages_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte )
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( handling_messages_with_garbage_between_messages_Async )}({garbageMode},{bytePerByte})" );
         var config = new MemoryChannelConfiguration() { EndPointName = "Test", DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
         var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
         var channel = CommunicationChannel.Create( TestHelper.Monitor, config );
@@ -98,7 +97,6 @@ public class DelimitedMessageHandlerTests
     [TestCase( "WithViciousGarbage", false )]
     public async Task multiEnd_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte )
     {
-        using var _ = TestHelper.Monitor.OpenInfo( $"{nameof( handling_messages_with_garbage_between_messages_Async )}({garbageMode},{bytePerByte})" );
         var config = new MemoryChannelConfiguration() { EndPointName = "Test", DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
         var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
         var channel = CommunicationChannel.Create( TestHelper.Monitor, config );

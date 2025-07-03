@@ -16,7 +16,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task completing_the_inner_pipe_completes_by_default_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( completing_the_inner_pipe_completes_by_default_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var writer = new StablePipeWriter();
         writer.SetWriter( pipe.Writer );
@@ -36,7 +35,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task timeout_throws_TimeoutException_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( timeout_throws_TimeoutException_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var slow = new SlowPipeWriter( pipe.Writer ) { Delay = 100 };
         var writer = new StablePipeWriter() { DefaultTimeout = 30 };
@@ -65,7 +63,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task TimeoutException_just_like_any_exception_can_return_a_CanceledResult_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( TimeoutException_just_like_any_exception_can_return_a_CanceledResult_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var slow = new SlowPipeWriter( pipe.Writer ) { Delay = 100 };
         var errorHandler = new ConfigurableStablePipeBehavior { OnErrorAction = OnErrorAction.Cancel };
@@ -99,7 +96,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task by_default_CancelPendingFlush_simply_waits_for_next_call_to_FlushAsync()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( by_default_CancelPendingFlush_simply_waits_for_next_call_to_FlushAsync ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var writer = new StablePipeWriter();
         writer.SetWriter( pipe.Writer );
@@ -122,7 +118,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task CancelPendingFlush_can_be_skipped_by_ReturnInnerCanceledResult_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( CancelPendingFlush_can_be_skipped_by_ReturnInnerCanceledResult_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var writer = new StablePipeWriter( new ConfigurableStablePipeBehavior { InnerCanceledResult = false } );
         writer.SetWriter( pipe.Writer );
@@ -143,7 +138,6 @@ public partial class StablePipeWriterTests
     [Test]
     public async Task OnDataWritten_event_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( OnDataWritten_event_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var writer = new StablePipeWriter( new ConfigurableStablePipeBehavior { InnerCanceledResult = false } );
         writer.SetWriter( pipe.Writer );

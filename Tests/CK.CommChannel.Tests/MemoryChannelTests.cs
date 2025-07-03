@@ -21,8 +21,6 @@ public class MemoryChannelTests
     [Test]
     public async Task simple_read_through_PipeChannel_Async()
     {
-        using var _ = TestHelper.Monitor.OpenInfo( nameof( simple_read_through_PipeChannel_Async ) );
-
         var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
         var config = new MemoryChannelConfiguration() { EndPointName = "Test", DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
         var channel = CommunicationChannel.Create( TestHelper.Monitor, config );
@@ -67,8 +65,6 @@ public class MemoryChannelTests
     [TestCase( false )]
     public async Task with_explicit_or_default_read_timeouts_Async( bool autoReconnect  )
     {
-        using var _ = TestHelper.Monitor.OpenInfo( nameof( with_explicit_or_default_read_timeouts_Async ) );
-
         var config = new MemoryChannelConfiguration()
         {
             EndPointName = "Test",
