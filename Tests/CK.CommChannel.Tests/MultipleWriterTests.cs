@@ -45,10 +45,10 @@ public class MultipleWriterTests
                 }
             } );
 
-            var senders = Enumerable.Range( 0, Environment.ProcessorCount * 5 )
+            var senders = Enumerable.Range( 0, (Environment.ProcessorCount + 1) * 3 )
                                     .Select( iTask => Task.Run( async () =>
                                     {
-                                        for( int i = 0; i < 10; i++ )
+                                        for( int i = 0; i < 50; i++ )
                                         {
                                             await writer.WriteAsync( $"{iTask}/{i}", default );
                                         }
