@@ -26,6 +26,13 @@ public abstract class MessageWriterBase<T>
     StringBuilder? _logStringBuilder; // Keep it to avoid reallocations when LogGate is open
     SemaphoreSlim? _lock;
     bool _isCompleted;
+    long _lastSentMessageTick;
+
+
+    /// <summary>
+    /// Gets the last <see cref="Environment.TickCount64"/> at which the last message has been sent.
+    /// </summary>
+    public long LastSentMessageTick => _lastSentMessageTick;
 
     /// <summary>
     /// The tag to use in logs when <see cref="LogGate"/>
@@ -127,6 +134,7 @@ public abstract class MessageWriterBase<T>
         }
     }
 
+
     /// <summary>
     /// Writes a message.
     /// </summary>
@@ -184,6 +192,7 @@ public abstract class MessageWriterBase<T>
                     firstTry = false;
                 }
                 FlushResult result = await _writer.FlushAsync( t ).ConfigureAwait( false );
+                _lastSentMessageTick = Environment.TickCount64;
                 if( result.IsCompleted )
                 {
                     _isCompleted = true;
@@ -235,7 +244,7 @@ public abstract class MessageWriterBase<T>
                 if( _ctsTimeout != null ) ReleaseTimeout( reg, ref _ctsTimeout );
                 if( alock != null ) alock.Release();
             }
-            if( toThrow != null ) toThrow.Throw();
+            toThrow?.Throw();
             Throw.DebugAssert( timeoutEx != null );
             throw timeoutEx;
         }
