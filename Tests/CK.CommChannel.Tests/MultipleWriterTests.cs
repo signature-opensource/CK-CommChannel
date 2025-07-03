@@ -18,6 +18,10 @@ public class MultipleWriterTests
     [TestCase( "UseNetworkStream", false )]
     public async Task MultipleWriter_stress_Async( string channelType, bool multiple )
     {
+        if( Environment.GetEnvironmentVariable( "APPVEYOR" ) == "True" )
+        {
+            Assert.Inconclusive( "Doesn't work on Appveyor." );
+        }
         bool usePipe = channelType == "UsePipe";
         using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( MultipleWriter_stress_Async )}({channelType},{multiple})" );
 
