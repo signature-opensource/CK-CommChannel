@@ -112,14 +112,10 @@ public class MemoryChannelTests
     [Test]
     public async Task multiple_channels_same_pipe_Async()
     {
-        using var _ = TestHelper.Monitor.OpenInfo( nameof(multiple_channels_same_pipe_Async) );
+        var config1 = new MemoryChannelConfiguration() { EndPointName = "Test" };
+        var config2 = new MemoryChannelConfiguration() { EndPointName = "Test", Reverted = true };
 
-        var config1 = new MemoryChannelConfiguration()
-            {EndPointName = "Test"};
-        var config2 = new MemoryChannelConfiguration()
-            {EndPointName = "Test", Reverted = true};
-
-        await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" );
+        await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" ).ConfigureAwait( false );
         try
         {
             var channel1 = CommunicationChannel.Create( TestHelper.Monitor, config1 );
@@ -131,7 +127,7 @@ public class MemoryChannelTests
             {
                 var monitor = new ActivityMonitor();
                 monitor.Info( "Receiving data" );
-                var r = await channel2.Reader.ReadAsync();
+                var r = await channel2.Reader.ReadAsync().ConfigureAwait( false );
                 monitor.Info( "Received data" );
                 r.Buffer.Length.ShouldBe( 3 );
                 mre.Set();
@@ -141,18 +137,17 @@ public class MemoryChannelTests
             {
                 var monitor = new ActivityMonitor();
                 monitor.Info( "Sending data" );
-                await channel1.Writer.WriteAsync( new ReadOnlyMemory<byte>( new byte[] {1, 2, 3} ) );
+                await channel1.Writer.WriteAsync( new ReadOnlyMemory<byte>( [1, 2, 3] ) ).ConfigureAwait( false );
                 monitor.Info( "Sent data" );
             } );
 
             TestHelper.Monitor.Info( "Waiting" );
-            mre.Wait(1000);
-            mre.IsSet.ShouldBeTrue();
+            mre.Wait( 1000 ).ShouldBeTrue();
         }
         finally
         {
 
-            await MemoryChannel.DeallocateAsync( "Test" );
+            await MemoryChannel.DeallocateAsync( "Test" ).ConfigureAwait( false );
         }
     }
 }
