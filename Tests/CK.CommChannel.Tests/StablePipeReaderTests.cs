@@ -17,7 +17,6 @@ public class StablePipeReaderTests
     [TestCase( false )]
     public async Task writing_and_reading_messages_Async( bool bytePerByte )
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( writing_and_reading_messages_Async )}({bytePerByte})" );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
         reader.SetReader( pipe.Reader );
@@ -35,7 +34,6 @@ public class StablePipeReaderTests
     [Test]
     public async Task timeout_throws_TimeoutException_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( timeout_throws_TimeoutException_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
         reader.DefaultTimeout = 35;
@@ -59,7 +57,6 @@ public class StablePipeReaderTests
     [Test]
     public async Task TimeoutException_just_like_any_exception_can_return_a_CanceledResult_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( timeout_throws_TimeoutException_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var slow = new SlowPipeReader( pipe.Reader ) { Delay = 100 };
         var behavior = new ConfigurableStablePipeBehavior { OnErrorAction = OnErrorAction.Cancel };
@@ -82,7 +79,6 @@ public class StablePipeReaderTests
     [Test]
     public async Task completing_the_inner_pipe_completes_by_default_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( completing_the_inner_pipe_completes_by_default_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
         reader.SetReader( pipe.Reader );
@@ -102,7 +98,6 @@ public class StablePipeReaderTests
     [TestCase( false, 0 )]
     public async Task closing_and_setting_reader_Async( bool bytePerByte, int seed )
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( closing_and_setting_reader_Async )}({bytePerByte},{seed})" );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
         reader.SetReader( pipe.Reader );
@@ -123,7 +118,6 @@ public class StablePipeReaderTests
     [TestCase( false, 3712 )]
     public async Task closing_setting_and_cancelling_reader_Async( bool bytePerByte, int seed )
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( closing_setting_and_cancelling_reader_Async )}({bytePerByte},{seed})" );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
         reader.SetReader( pipe.Reader );
@@ -145,7 +139,6 @@ public class StablePipeReaderTests
     [Test]
     public async Task reading_from_a_closed_reader_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( reading_from_a_closed_reader_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
 
@@ -165,7 +158,6 @@ public class StablePipeReaderTests
     [Test]
     public async Task never_reading_from_a_closed_reader_Async()
     {
-        using var gLog = TestHelper.Monitor.OpenInfo( nameof( never_reading_from_a_closed_reader_Async ) );
         var pipe = new Pipe( new PipeOptions( useSynchronizationContext: false ) );
         var reader = new StablePipeReader();
 

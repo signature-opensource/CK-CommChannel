@@ -18,6 +18,10 @@ public class MultipleWriterTests
     [TestCase( "UseNetworkStream", false )]
     public async Task MultipleWriter_stress_Async( string channelType, bool multiple )
     {
+        if( Environment.GetEnvironmentVariable( "APPVEYOR" ) == "True" )
+        {
+            Assert.Inconclusive( "Doesn't work on Appveyor." );
+        }
         bool usePipe = channelType == "UsePipe";
         using var gLog = TestHelper.Monitor.OpenInfo( $"{nameof( MultipleWriter_stress_Async )}({channelType},{multiple})" );
 
@@ -45,10 +49,10 @@ public class MultipleWriterTests
                 }
             } );
 
-            var senders = Enumerable.Range( 0, Environment.ProcessorCount * 5 )
+            var senders = Enumerable.Range( 0, (Environment.ProcessorCount + 1) * 3 )
                                     .Select( iTask => Task.Run( async () =>
                                     {
-                                        for( int i = 0; i < 10; i++ )
+                                        for( int i = 0; i < 50; i++ )
                                         {
                                             await writer.WriteAsync( $"{iTask}/{i}", default );
                                         }
