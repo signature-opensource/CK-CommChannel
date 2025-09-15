@@ -8,4 +8,7 @@
     <PackageReference Include="CK.PerfectEvent" Version="26.0.0" />
     <PackageReference Include="System.IO.Pipelines" Version="9.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.IO.CommChannel\CK.IO.CommChannel.csproj" />
+  </ItemGroup>
 </Project>
