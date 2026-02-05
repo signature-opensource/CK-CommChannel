@@ -35,7 +35,7 @@ public abstract class MessageWriterBase<T>
     public long LastSentMessageTick => _lastSentMessageTick;
 
     /// <summary>
-    /// The tag to use in logs when <see cref="LogGate"/>
+    /// The tag to use in logs when <see cref="CommChannelMessageLogGates.MessageWriterLogGate"/>
     /// is Open.
     /// Defaults to the tag "MessageWriter".
     /// </summary>
@@ -48,8 +48,9 @@ public abstract class MessageWriterBase<T>
     /// as Debug log lines with <see cref="LogTag"/>.
     /// Closed by default.
     /// </summary>
+    [Obsolete( "Use CommChannelMessageLogGates.MessageWriterLogGate instead." )]
     // ReSharper disable once StaticMemberInGenericType
-    public static readonly StaticGate LogGate = new StaticGate( "CK.CommChannel.MessageWriter", false );
+    public static StaticGate LogGate => CommChannelMessageLogGates.MessageWriterLogGate;
 
     /// <summary>
     /// Initializes a new <see cref="MessageWriterBase{T}"/>.
@@ -178,19 +179,22 @@ public abstract class MessageWriterBase<T>
                 {
                     reg = cancellationToken.UnsafeRegister( _ => _ctsTimeout.Cancel(), null );
                 }
+
                 t = _ctsTimeout.Token;
             }
+
             retryWithCurrentTimeout:
             try
             {
                 if( firstTry )
                 {
                     if( alock != null ) await alock.WaitAsync( t ).ConfigureAwait( false );
-                    if( LogGate.IsOpen ) WriteMessageToStaticLogger( message );
+                    if( CommChannelMessageLogGates.MessageWriterLogGate.IsOpen ) WriteMessageToStaticLogger( message );
                     // If writing the message throws, this is not a communication error.
                     WriteMessage( message, _writer );
                     firstTry = false;
                 }
+
                 FlushResult result = await _writer.FlushAsync( t ).ConfigureAwait( false );
                 _lastSentMessageTick = Environment.TickCount64;
                 if( result.IsCompleted )
@@ -199,6 +203,7 @@ public abstract class MessageWriterBase<T>
                     if( _ctsTimeout != null ) DefinitelyReleaseTimeout( reg, ref _ctsTimeout );
                     return false;
                 }
+
                 return true;
             }
             catch( OperationCanceledException ex )
@@ -209,6 +214,7 @@ public abstract class MessageWriterBase<T>
                     hasTimedout = _ctsTimeout.IsCancellationRequested;
                     ReleaseTimeout( reg, ref _ctsTimeout );
                 }
+
                 if( cancellationToken.IsCancellationRequested || !hasTimedout )
                 {
                     toThrow = ExceptionDispatchInfo.Capture( ex );
@@ -237,6 +243,7 @@ public abstract class MessageWriterBase<T>
                         case OnErrorAction.Cancel: return !_isCompleted;
                     }
                 }
+
                 throw;
             }
             finally
@@ -244,6 +251,7 @@ public abstract class MessageWriterBase<T>
                 if( _ctsTimeout != null ) ReleaseTimeout( reg, ref _ctsTimeout );
                 if( alock != null ) alock.Release();
             }
+
             toThrow?.Throw();
             Throw.DebugAssert( timeoutEx != null );
             throw timeoutEx;
@@ -252,7 +260,6 @@ public abstract class MessageWriterBase<T>
         {
             Interlocked.Exchange( ref _writing, 0 );
         }
-
     }
 
     void WriteMessageToStaticLogger( T message )
@@ -279,11 +286,12 @@ public abstract class MessageWriterBase<T>
 
         _logStringBuilder.AppendBufferSpan( _logArrayBuffer.WrittenSpan );
 
-        LogGate.StaticLogger?.Debug( LogTag,
+        CommChannelMessageLogGates.MessageWriterLogGate.StaticLogger?.Debug( LogTag,
             $"Written message ({_logArrayBuffer.WrittenCount}b): {_logStringBuilder.ToString()}" );
     }
 
-    static void ReleaseTimeout( in CancellationTokenRegistration reg, [DisallowNull] ref CancellationTokenSource? ctsTimeout )
+    static void ReleaseTimeout( in CancellationTokenRegistration reg,
+        [DisallowNull] ref CancellationTokenSource? ctsTimeout )
     {
         reg.Dispose();
         if( !ctsTimeout.TryReset() )
@@ -293,7 +301,8 @@ public abstract class MessageWriterBase<T>
         }
     }
 
-    static void DefinitelyReleaseTimeout( in CancellationTokenRegistration reg, [DisallowNull] ref CancellationTokenSource? ctsTimeout )
+    static void DefinitelyReleaseTimeout( in CancellationTokenRegistration reg,
+        [DisallowNull] ref CancellationTokenSource? ctsTimeout )
     {
         reg.Dispose();
         ctsTimeout.Dispose();
@@ -306,5 +315,4 @@ public abstract class MessageWriterBase<T>
     /// <param name="message">The message.</param>
     /// <param name="buffer">The buffer.</param>
     protected abstract void WriteMessage( in T message, IBufferWriter<byte> buffer );
-
 }
