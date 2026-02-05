@@ -29,7 +29,7 @@ public abstract class MessageHandler<T>
     int _activeTimeout;
 
     /// <summary>
-    /// The tag to use in logs when <see cref="MessageReaderBase{T}.LogGate"/>
+    /// The tag to use in logs when <see cref="CommChannelMessageLogGates.MessageReaderLogGate"/>
     /// is Open on the embedded MessageReader.
     /// Defaults to the tag "MessageReader".
     /// </summary>

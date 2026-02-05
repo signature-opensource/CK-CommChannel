@@ -27,7 +27,7 @@ public abstract class MessageReaderBase<T>
     bool _isCompleted;
 
     /// <summary>
-    /// The tag to use in logs when <see cref="LogGate"/>
+    /// The tag to use in logs when <see cref="CommChannelMessageLogGates.MessageReaderLogGate"/>
     /// is Open.
     /// Defaults to the tag "MessageReader".
     /// </summary>
@@ -40,8 +40,9 @@ public abstract class MessageReaderBase<T>
     /// as Debug log lines with <see cref="LogTag"/>.
     /// Closed by default.
     /// </summary>
+    [Obsolete( "Use CommChannelMessageLogGates.MessageReaderLogGate instead." )]
     // ReSharper disable once StaticMemberInGenericType
-    public static readonly StaticGate LogGate = new StaticGate( "CK.CommChannel.MessageReader", false );
+    public static StaticGate LogGate => CommChannelMessageLogGates.MessageReaderLogGate;
 
     /// <summary>
     /// Initializes a new <see cref="MessageReaderBase{T}"/>.
@@ -147,7 +148,8 @@ public abstract class MessageReaderBase<T>
     /// must be received before the timeout or a TimeoutMessageException is thrown.
     /// </param>
     /// <returns>The message read. Can be empty.</returns>
-    public async ValueTask<T> ReadNextAsync( CancellationToken cancellationToken, int timeout = 0, Func<T, bool>? messageFilter = null )
+    public async ValueTask<T> ReadNextAsync( CancellationToken cancellationToken, int timeout = 0,
+        Func<T, bool>? messageFilter = null )
     {
         // When IsCompleted is true or CancelPendingRead has been called, we may kindly handle concurrent
         // calls without throwing the InvalidOperationException here. This is acceptable.
@@ -178,15 +180,18 @@ public abstract class MessageReaderBase<T>
                 {
                     reg = cancellationToken.UnsafeRegister( _ => _ctsTimeout.Cancel(), null );
                 }
+
                 t = _ctsTimeout.Token;
             }
+
             try
             {
-                for(; ; )
+                for( ;; )
                 {
                     var result = await _reader.ReadAsync( t ).ConfigureAwait( false );
                     ReadOnlySequence<byte> buffer = result.Buffer;
-                    LogGate.StaticLogger?.Debug( LogTag, $"Read buffer ({buffer.Length}b): {DumpBufferToString( buffer )}" );
+                    CommChannelMessageLogGates.MessageReaderLogGate.StaticLogger?.Debug( LogTag,
+                        $"Read buffer ({buffer.Length}b): {DumpBufferToString( buffer )}" );
                     if( TryParseMessage( ref buffer, out var message ) )
                     {
                         T m = Convert( message );
@@ -197,16 +202,19 @@ public abstract class MessageReaderBase<T>
                             SetCompleted();
                             return messageFilter != null && messageFilter( m ) ? m : EmptyMessage;
                         }
+
                         if( messageFilter != null && !messageFilter( m ) ) continue;
                         if( _ctsTimeout != null ) ReleaseTimeout( reg, ref _ctsTimeout );
                         return m;
                     }
+
                     _reader.AdvanceTo( buffer.Start, buffer.End );
                     if( result.IsCompleted )
                     {
                         SetCompleted();
                         return EmptyMessage;
                     }
+
                     if( result.IsCanceled )
                     {
                         if( _ctsTimeout != null ) ReleaseTimeout( reg, ref _ctsTimeout );
@@ -222,6 +230,7 @@ public abstract class MessageReaderBase<T>
                     hasTimedout = _ctsTimeout.IsCancellationRequested;
                     ReleaseTimeout( reg, ref _ctsTimeout );
                 }
+
                 if( cancellationToken.IsCancellationRequested || !hasTimedout )
                 {
                     toThrow = ExceptionDispatchInfo.Capture( ex );
@@ -247,8 +256,10 @@ public abstract class MessageReaderBase<T>
                     case OnErrorAction.Retry: goto retry;
                     case OnErrorAction.Cancel: return EmptyMessage;
                 }
+
                 throw;
             }
+
             if( toThrow != null ) toThrow.Throw();
             Throw.DebugAssert( timeoutEx != null );
             throw timeoutEx;
@@ -258,7 +269,8 @@ public abstract class MessageReaderBase<T>
             Interlocked.Exchange( ref _reading, 0 );
         }
 
-        static void ReleaseTimeout( in CancellationTokenRegistration reg, [DisallowNull] ref CancellationTokenSource? ctsTimeout )
+        static void ReleaseTimeout( in CancellationTokenRegistration reg,
+            [DisallowNull] ref CancellationTokenSource? ctsTimeout )
         {
             reg.Dispose();
             if( !ctsTimeout.TryReset() )
@@ -267,7 +279,6 @@ public abstract class MessageReaderBase<T>
                 ctsTimeout = null;
             }
         }
-
     }
 
     string DumpBufferToString( ReadOnlySequence<byte> sequence )
@@ -297,7 +308,8 @@ public abstract class MessageReaderBase<T>
     /// must be received before the timeout or a TimeoutMessageException is thrown.
     /// </param>
     /// <returns>The message read. Can be empty.</returns>
-    public ValueTask<T> ReadNextAsync( int timeout = 0, Func<T, bool>? messageFilter = null ) => ReadNextAsync( default, timeout );
+    public ValueTask<T> ReadNextAsync( int timeout = 0, Func<T, bool>? messageFilter = null ) =>
+        ReadNextAsync( default, timeout );
 
     /// <summary>
     /// Isolates a message.
@@ -313,5 +325,4 @@ public abstract class MessageReaderBase<T>
     /// <param name="message">The message bytes.</param>
     /// <returns>The message.</returns>
     protected abstract T Convert( in ReadOnlySequence<byte> message );
-
 }
