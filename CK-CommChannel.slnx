@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/Doc/">
+    <File Path="Common/Doc/BasicCommands.png" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <File Path="Tests/TestHelper.config" />
+    <Project Path="Tests/CK.CommChannel.Serial.Tests/CK.CommChannel.Serial.Tests.csproj" />
+    <Project Path="Tests/CK.CommChannel.Tests/CK.CommChannel.Tests.csproj" />
+  </Folder>
+  <Project Path="CK.CommChannel.Serial/CK.CommChannel.Serial.csproj" />
+  <Project Path="CK.CommChannel/CK.CommChannel.csproj" />
+  <Project Path="CK.IO.CommChannel/CK.IO.CommChannel.csproj" />
+</Solution>
