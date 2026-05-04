@@ -4,8 +4,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="26.0.0" />
-    <PackageReference Include="CK.PerfectEvent" Version="27.0.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="26.0.1--ci.1" />
+    <PackageReference Include="CK.PerfectEvent" Version="27.0.1--ci.1" />
     <PackageReference Include="System.IO.Pipelines" Version="9.0.14" />
   </ItemGroup>
   <ItemGroup>
