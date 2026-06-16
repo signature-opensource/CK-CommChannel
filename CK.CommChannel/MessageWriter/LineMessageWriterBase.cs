@@ -13,7 +13,7 @@ public abstract class LineMessageWriterBase<T> : MessageWriterBase<T>
     readonly ReadOnlyMemory<byte> _delimiter;
 
     /// <summary>
-    /// Initializes a new <see cref="MessageHandlerBase"/>.
+    /// Initializes a new <see cref="LineMessageWriterBase{T}"/>.
     /// </summary>
     /// <param name="writer">The pipe reader.</param>
     /// <param name="delimiter">Delimiter. Must not be empty.</param>

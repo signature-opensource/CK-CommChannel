@@ -8,7 +8,7 @@ namespace CK.CommChannel;
 /// <summary>
 /// Template pattern for protocols based on messages delimited by 1 starting byte and 1 or more ending bytes.
 /// This handles invalid messages (noise, garbage): only segments that are between delimiters
-/// are submitted to <see cref="MessageReaderBase.Convert(ReadOnlySequence{byte})"/>.
+/// are submitted to <see cref="MessageReaderBase{T}.Convert(in System.Buffers.ReadOnlySequence{byte})"/>.
 /// </summary>
 public abstract class DelimitedMessageReader<T> : MessageReaderBase<T>
 {
@@ -30,7 +30,7 @@ public abstract class DelimitedMessageReader<T> : MessageReaderBase<T>
     /// </param>
     /// <param name="removeDelimiters">
     /// False to keep the <paramref name="startDelimiter"/> and <paramref name="endDelimiter"/> in message.
-    /// By default the message submitted to <see cref="MessageReaderBase.Convert(ReadOnlySequence{byte})"/> is trimmed
+    /// By default the message submitted to <see cref="MessageReaderBase{T}.Convert(in System.Buffers.ReadOnlySequence{byte})"/> is trimmed
     /// of the delimiters.
     /// </param>
     public DelimitedMessageReader( PipeReader reader,
@@ -58,7 +58,7 @@ public abstract class DelimitedMessageReader<T> : MessageReaderBase<T>
     /// </param>
     /// <param name="removeDelimiters">
     /// False to keep the <paramref name="startDelimiter"/> and <paramref name="multiEndDelimiter"/> in message.
-    /// By default the message submitted to <see cref="MessageReaderBase.Convert(ReadOnlySequence{byte})"/> is trimmed
+    /// By default the message submitted to <see cref="MessageReaderBase{T}.Convert(in System.Buffers.ReadOnlySequence{byte})"/> is trimmed
     /// of the delimiters.
     /// </param>
     public DelimitedMessageReader( PipeReader reader,

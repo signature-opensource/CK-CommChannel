@@ -1,10 +1,9 @@
 using CK.Core;
-using System;
 
 namespace CK.CommChannel;
 
 /// <summary>
-/// Element of the <see cref="LogCatcher.Entries">Entries</see>.
+/// Element of the log entries captured for a communication channel error context.
 /// </summary>
 public sealed class CommunicationChannelLogEntry
 {

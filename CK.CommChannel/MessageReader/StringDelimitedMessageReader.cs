@@ -41,7 +41,7 @@ public sealed class StringDelimitedMessageReader : DelimitedMessageReader<string
     /// <param name="multiEndDelimiter">Two or more ending delimiters. The last byte must not be the same as <paramref name="startDelimiter"/>.</param>
     /// <param name="removeDelimiters">
     /// False to keep the <paramref name="startDelimiter"/> and <paramref name="multiEndDelimiter"/> in message.
-    /// By default the message submitted to <see cref="MessageReaderBase.Convert(ReadOnlySequence{byte})"/> is trimmed
+    /// By default the message submitted to <see cref="MessageReaderBase{T}.Convert(in System.Buffers.ReadOnlySequence{byte})"/> is trimmed
     /// of the delimiters.
     /// </param>
     public StringDelimitedMessageReader( PipeReader reader,

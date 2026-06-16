@@ -83,7 +83,7 @@ public class AutoReconnectionTests
             await send2;
             var messages1 = await receive1;
             var messages2 = await receive2;
-            readDone.Cancel();
+            await readDone.CancelAsync();
             if( failureTask != null ) await failureTask;
 
             var expectedMessages = Enumerable.Range( 0, 100 ).Select( i => $"Message {i}" ).Append( "End of Messages" ).ToArray();

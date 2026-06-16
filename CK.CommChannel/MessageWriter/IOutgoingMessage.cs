@@ -3,7 +3,7 @@ using System.Buffers;
 namespace CK.CommChannel;
 
 /// <summary>
-/// A "message" is anything that can write itself into a <see cref="IBufferWriter{byte}"/>.
+/// A "message" is anything that can write itself into a <see cref="IBufferWriter{T}"/> of bytes.
 /// </summary>
 public interface IOutgoingMessage
 {

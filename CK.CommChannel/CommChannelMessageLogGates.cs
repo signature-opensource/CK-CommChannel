@@ -2,6 +2,10 @@
 
 namespace CK.CommChannel;
 
+/// <summary>
+/// Process-wide <see cref="StaticGate"/>s that enable verbose buffer-level logging for the
+/// message reader and writer. Both are closed by default.
+/// </summary>
 public static class CommChannelMessageLogGates
 {
     /// <summary>

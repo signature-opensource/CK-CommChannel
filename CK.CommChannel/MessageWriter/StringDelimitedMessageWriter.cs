@@ -33,6 +33,7 @@ public sealed class StringDelimitedMessageWriter : DelimitedMessageWriterBase<st
     /// Note that opposed to the <see cref="StringDelimitedMessageReader"/>, the start byte may be the same as the last byte of the ending delimiter.
     /// </summary>
     /// <param name="writer">The pipe writer.</param>
+    /// <param name="encoding">The encoding used to encode the string into bytes.</param>
     /// <param name="startDelimiter">Starting delimiter.</param>
     /// <param name="multiEndDelimiter">Two or more ending delimiters.</param>
     public StringDelimitedMessageWriter( PipeWriter writer,
@@ -50,8 +51,9 @@ public sealed class StringDelimitedMessageWriter : DelimitedMessageWriterBase<st
     /// Note that opposed to the <see cref="StringDelimitedMessageReader"/>, the start byte may be the same as the last byte of the ending delimiter.
     /// </summary>
     /// <param name="writer">The pipe writer.</param>
+    /// <param name="encoding">The encoding used to encode the string into bytes.</param>
     /// <param name="startDelimiters">Starting delimiter. Must not be empty.</param>
-    /// <param name="multiEndDelimiter">Ending delimiters. Must not be empty.</param>
+    /// <param name="endDelimiters">Ending delimiters. Must not be empty.</param>
     public StringDelimitedMessageWriter( PipeWriter writer,
                                          Encoding encoding,
                                          ReadOnlyMemory<byte> startDelimiters,

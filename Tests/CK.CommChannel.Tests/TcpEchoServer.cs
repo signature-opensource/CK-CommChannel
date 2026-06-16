@@ -41,7 +41,7 @@ public class TcpEchoServer : IAsyncDisposable
 
     public async Task StopAsync()
     {
-        _cts.Cancel();
+        await _cts.CancelAsync();
         _listener.Stop();
         if( _serverTask is not null )
         {

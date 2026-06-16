@@ -16,6 +16,9 @@ public sealed class MessageWriter<T> : MessageWriterBase<T> where T : class, IOu
     /// The pipe writer. Can be a <see cref="StablePipeWriter"/> (and in such case, its <see cref="StablePipeReader.PipeBehavior"/>
     /// is automatically used if <paramref name="behavior"/> is null.
     /// </param>
+    /// <param name="behavior">
+    /// Optional behavior. When null and <paramref name="writer"/> is a <see cref="StablePipeWriter"/>, its pipe behavior is used.
+    /// </param>
     public MessageWriter( PipeWriter writer, IStablePipeBehavior? behavior )
         : base( writer, behavior )
     {

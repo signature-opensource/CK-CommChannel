@@ -79,6 +79,7 @@ public sealed class SerialChannelConfiguration : CommunicationChannelConfigurati
     /// <seealso cref="SerialPort.DtrEnable"/>
     public bool DtrEnable { get; set; }
 
+    /// <inheritdoc />
     protected override ChannelImpl DoCreateChannelImpl( IActivityMonitor monitor, bool canOpenConnection ) => new SerialChannel( this );
 
     /// <summary>

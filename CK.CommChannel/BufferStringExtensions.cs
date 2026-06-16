@@ -4,6 +4,10 @@ using System.Text;
 
 namespace CK.CommChannel
 {
+    /// <summary>
+    /// Helpers to render byte buffers as human-readable strings: printable ASCII (32-126) as
+    /// characters, other bytes as hexadecimal enclosed in angle brackets.
+    /// </summary>
     public static class BufferStringUtilities
     {
         /// <summary>

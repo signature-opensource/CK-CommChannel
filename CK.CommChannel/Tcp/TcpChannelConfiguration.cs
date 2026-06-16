@@ -87,6 +87,7 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
     /// </summary>
     public int? ReceiveBufferSize { get; set; }
 
+    /// <inheritdoc />
     protected override ChannelImpl DoCreateChannelImpl( IActivityMonitor monitor, bool canOpenConnection ) => new TcpChannel( monitor, this );
 
     /// <summary>

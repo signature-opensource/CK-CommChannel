@@ -53,7 +53,7 @@ public abstract class DelimitedMessageWriterBase<T> : MessageWriterBase<T>
     /// </summary>
     /// <param name="writer">The pipe writer.</param>
     /// <param name="startDelimiters">Starting delimiter. Must not be empty.</param>
-    /// <param name="multiEndDelimiter">Ending delimiters. Must not be empty.</param>
+    /// <param name="endDelimiters">Ending delimiters. Must not be empty.</param>
     public DelimitedMessageWriterBase( PipeWriter writer,
                                    ReadOnlyMemory<byte> startDelimiters,
                                    ReadOnlyMemory<byte> endDelimiters )

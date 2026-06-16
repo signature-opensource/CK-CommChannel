@@ -11,7 +11,7 @@ namespace CK.CommChannel;
 /// implementation when required.
 /// <para>
 /// Instantiating a ChannelImpl is synchronous. If possible, the <see cref="Input"/> and <see cref="Output"/>
-/// can be provided but most often, the asynchronous <see cref="DoInitialOpenAsync(IActivityMonitor, CommunicationChannelConfiguration)"/>
+/// can be provided but most often, the asynchronous <see cref="DoInitialOpenAsync(IActivityMonitor, CommunicationChannelConfiguration, CancellationToken)"/>
 /// obtains them.
 /// </para>
 /// </summary>

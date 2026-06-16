@@ -26,7 +26,7 @@ public class StablePipeReaderTests
         var r = StartReadingMessagesAsync( reader );
         await Task.Delay( 1000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
-        writeStop.Cancel();
+        await writeStop.CancelAsync();
         (await w).ShouldBeNull();
         (await r).ShouldBeNull();
     }
@@ -108,7 +108,7 @@ public class StablePipeReaderTests
         var k = StartCloserReopenerLoopAsync( reader, pipe.Reader, seed );
         await Task.Delay( 2000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
-        writeStop.Cancel();
+        await writeStop.CancelAsync();
         (await w).ShouldBeNull();
         (await r).ShouldBeNull();
         (await k).ShouldBeNull();
@@ -129,7 +129,7 @@ public class StablePipeReaderTests
         var c = StartCancelLoopAsync( reader, seed );
         await Task.Delay( 2000 );
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
-        writeStop.Cancel();
+        await writeStop.CancelAsync();
         (await w).ShouldBeNull();
         (await r).ShouldBeNull();
         (await k).ShouldBeNull();
@@ -150,7 +150,7 @@ public class StablePipeReaderTests
         reader.SetReader( pipe.Reader );
 
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
-        writeStop.Cancel();
+        await writeStop.CancelAsync();
         (await w).ShouldBeNull();
         (await r).ShouldBeNull();
     }
@@ -167,7 +167,7 @@ public class StablePipeReaderTests
         var r = StartReadingMessagesAsync( reader );
 
         TestHelper.Monitor.Info( "Signaling the stop CTS." );
-        writeStop.Cancel();
+        await writeStop.CancelAsync();
         (await w).ShouldBeNull();
         (await r).ShouldBeNull();
     }

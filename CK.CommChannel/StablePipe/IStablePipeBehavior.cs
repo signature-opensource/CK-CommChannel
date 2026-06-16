@@ -9,6 +9,9 @@ namespace CK.CommChannel;
 /// </summary>
 public interface IStablePipeBehavior
 {
+    /// <summary>
+    /// Default no-op implementation returned by <see cref="Default"/>.
+    /// </summary>
     sealed class Def : IStablePipeBehavior { }
 
     /// <summary>
