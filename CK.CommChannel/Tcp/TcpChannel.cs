@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Threading;
@@ -17,6 +18,19 @@ sealed class TcpChannel : ChannelImpl
         Throw.DebugAssert( configuration != null );
         Throw.DebugAssert( "Configuration has been validated.", configuration.Host != null );
         _client = new Socket( SocketType.Stream, ProtocolType.Tcp );
+        _client.NoDelay = configuration.NoDelay;
+        if( configuration.LingerSeconds is int linger )
+        {
+            _client.LingerState = new LingerOption( true, linger );
+        }
+        if( configuration.SendBufferSize is int sndBuf )
+        {
+            _client.SendBufferSize = sndBuf;
+        }
+        if( configuration.ReceiveBufferSize is int rcvBuf )
+        {
+            _client.ReceiveBufferSize = rcvBuf;
+        }
         if( configuration.EnableTcpKeepalive )
         {
             SetupSocketKeepAlive( monitor, _client, configuration );
@@ -39,6 +53,11 @@ sealed class TcpChannel : ChannelImpl
     protected internal override ValueTask DynamicReconfigureAsync( IActivityMonitor monitor, CommunicationChannelConfiguration configuration )
     {
         var c = (TcpChannelConfiguration)configuration;
+        _client.NoDelay = c.NoDelay;
+        if( c.LingerSeconds is int linger )
+        {
+            _client.LingerState = new LingerOption( true, linger );
+        }
         if( c.EnableTcpKeepalive )
         {
             SetupSocketKeepAlive( monitor, _client, c );
@@ -59,36 +78,34 @@ sealed class TcpChannel : ChannelImpl
 
     static void SetupSocketKeepAlive( IActivityMonitor monitor, Socket socket, TcpChannelConfiguration configuration )
     {
-        try
-        {
-            // Default values for KeepAlive parameters.
-            Throw.DebugAssert( (int?)socket.GetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.KeepAlive ) == 0 );
-            Throw.DebugAssert( (int?)socket.GetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval ) == 1 );
-            Throw.DebugAssert( (int?)socket.GetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime ) == 7200 );
-            Throw.DebugAssert( (int?)socket.GetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount ) == 10 );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.KeepAlive, true );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, configuration.TcpKeepAliveIntervalSeconds );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, configuration.TcpKeepAliveTimeSeconds );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, configuration.TcpKeepAliveRetryCount );
-        }
-        catch( SocketException ex )
-        {
-            monitor.Warn( "Error while enabling KeepAlive.", ex );
-        }
+        // SO_KEEPALIVE is a socket-level option; the three TcpKeepAlive* tuning options are TCP-level.
+        // Each option is set independently so one unsupported option (e.g. TcpKeepAliveRetryCount on
+        // Windows < 1709) cannot prevent the others from applying. No precondition on the current
+        // KeepAlive state: this runs both on a fresh socket (ctor) and on an already-configured one
+        // (DynamicReconfigureAsync), and unconditionally enables it.
+        TrySetSocketOption( monitor, "KeepAlive", () => socket.SetSocketOption( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveInterval", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, configuration.TcpKeepAliveIntervalSeconds ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveTime", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, configuration.TcpKeepAliveTimeSeconds ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveRetryCount", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, configuration.TcpKeepAliveRetryCount ) );
     }
 
     static void ResetSocketKeepAlive( IActivityMonitor monitor, Socket socket )
     {
+        TrySetSocketOption( monitor, "KeepAlive", () => socket.SetSocketOption( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 0 ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveInterval", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveTime", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 7200 ) );
+        TrySetSocketOption( monitor, "TcpKeepAliveRetryCount", () => socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10 ) );
+    }
+
+    static void TrySetSocketOption( IActivityMonitor monitor, string optionName, Action set )
+    {
         try
         {
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.KeepAlive, 0 );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 1 );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 7200 );
-            socket.SetSocketOption( SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10 );
+            set();
         }
         catch( SocketException ex )
         {
-            monitor.Warn( "Error while disabling KeepAlive.", ex );
+            monitor.Warn( $"Error while setting socket option '{optionName}'.", ex );
         }
     }
 }

@@ -57,16 +57,54 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
     /// </summary>
     public int TcpKeepAliveRetryCount { get; set; } = 10;
 
+    /// <summary>
+    /// Disables Nagle's algorithm (TCP_NODELAY) on the socket when true.
+    /// Recommended for small request/response telegram protocols where latency matters more than
+    /// send coalescing. Defaults to false (Nagle enabled, the OS default).
+    /// <para><seealso cref="System.Net.Sockets.Socket.NoDelay"/></para>
+    /// </summary>
+    public bool NoDelay { get; set; }
+
+    /// <summary>
+    /// SO_LINGER timeout in seconds. Null leaves the OS default (graceful close); 0 forces an
+    /// abortive close (immediate RST); a positive value lingers up to that many seconds on close.
+    /// Defaults to null.
+    /// <para><seealso cref="System.Net.Sockets.Socket.LingerState"/></para>
+    /// </summary>
+    public int? LingerSeconds { get; set; }
+
+    /// <summary>
+    /// SO_SNDBUF send buffer size in bytes. Null leaves the OS default. Best set before connect, so
+    /// a change forces the channel to reopen. Defaults to null.
+    /// <para><seealso cref="System.Net.Sockets.Socket.SendBufferSize"/></para>
+    /// </summary>
+    public int? SendBufferSize { get; set; }
+
+    /// <summary>
+    /// SO_RCVBUF receive buffer size in bytes. Null leaves the OS default. Best set before connect, so
+    /// a change forces the channel to reopen. Defaults to null.
+    /// <para><seealso cref="System.Net.Sockets.Socket.ReceiveBufferSize"/></para>
+    /// </summary>
+    public int? ReceiveBufferSize { get; set; }
+
     protected override ChannelImpl DoCreateChannelImpl( IActivityMonitor monitor, bool canOpenConnection ) => new TcpChannel( monitor, this );
 
     /// <summary>
-    /// If <paramref name="configuration"/> is not a <see cref="TcpChannelConfiguration"/> or it
-    /// has with different <see cref="Host"/> and <see cref="Port"/> returns false (a new channel implementation must be obtained).
-    /// Otherwise if something changed in keep alive configuration, returns true: the channel implementation MUST be reconfigured.
-    /// If configuration is exactly the same, returns null.
+    /// Classifies how <paramref name="configuration"/> can be applied.
+    /// <para>
+    /// Returns false (a new channel implementation must be obtained) when it is not a
+    /// <see cref="TcpChannelConfiguration"/>, when <see cref="Host"/> or <see cref="Port"/> differ,
+    /// or when <see cref="SendBufferSize"/> or <see cref="ReceiveBufferSize"/> differ (buffer sizes
+    /// are best applied before connect).
+    /// </para>
+    /// <para>Returns null when every option is identical.</para>
+    /// <para>
+    /// Otherwise returns true: only live-settable options (keep alive, <see cref="NoDelay"/> or
+    /// <see cref="LingerSeconds"/>) changed and the channel implementation can be reconfigured in place.
+    /// </para>
     /// </summary>
     /// <param name="configuration">The new configuration to apply.</param>
-    /// <returns>Null if it's the same, false otherwise.</returns>
+    /// <returns>False to recreate the implementation, true to reconfigure it in place, null when unchanged.</returns>
     protected override bool? DoCanDynamicReconfigureWith( CommunicationChannelConfiguration configuration )
     {
         if( configuration is not TcpChannelConfiguration o
@@ -75,10 +113,19 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
         {
             return false;
         }
+        // Buffer sizes are best applied before connect: a change requires a full reopen.
+        if( o.SendBufferSize != SendBufferSize
+            || o.ReceiveBufferSize != ReceiveBufferSize )
+        {
+            return false;
+        }
+        // Keep-alive, NoDelay and Linger are live-settable: a change is a dynamic reconfigure.
         if( o.EnableTcpKeepalive == EnableTcpKeepalive
             && o.TcpKeepAliveIntervalSeconds == TcpKeepAliveIntervalSeconds
             && o.TcpKeepAliveRetryCount == TcpKeepAliveRetryCount
-            && o.TcpKeepAliveTimeSeconds == TcpKeepAliveTimeSeconds )
+            && o.TcpKeepAliveTimeSeconds == TcpKeepAliveTimeSeconds
+            && o.NoDelay == NoDelay
+            && o.LingerSeconds == LingerSeconds )
         {
             return null;
         }
@@ -130,6 +177,22 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
             }
         }
 
+        if( SendBufferSize.HasValue && SendBufferSize.Value <= 0 )
+        {
+            success = false;
+            monitor.Error( $"The '{nameof( SendBufferSize )}' property is invalid: {SendBufferSize.Value} (must be positive, or null for the OS default)." );
+        }
+        if( ReceiveBufferSize.HasValue && ReceiveBufferSize.Value <= 0 )
+        {
+            success = false;
+            monitor.Error( $"The '{nameof( ReceiveBufferSize )}' property is invalid: {ReceiveBufferSize.Value} (must be positive, or null for the OS default)." );
+        }
+        if( LingerSeconds.HasValue && LingerSeconds.Value < 0 )
+        {
+            success = false;
+            monitor.Error( $"The '{nameof( LingerSeconds )}' property is invalid: {LingerSeconds.Value} (must be 0 or positive, or null for the OS default)." );
+        }
+
         return success;
     }
 
@@ -152,6 +215,13 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
             TcpKeepAliveIntervalSeconds = r.ReadInt32();
             TcpKeepAliveRetryCount = r.ReadInt32();
         }
+        if( v >= 2 )
+        {
+            NoDelay = r.ReadBoolean();
+            LingerSeconds = r.ReadNullableInt32();
+            SendBufferSize = r.ReadNullableInt32();
+            ReceiveBufferSize = r.ReadNullableInt32();
+        }
     }
 
     /// <summary>
@@ -161,7 +231,7 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
     public override void Write( ICKBinaryWriter w )
     {
         base.Write( w );
-        w.Write( (byte)1 );
+        w.Write( (byte)2 );
         w.WriteNullableString( Host );
         w.Write( Port );
 
@@ -170,6 +240,12 @@ public sealed class TcpChannelConfiguration : CommunicationChannelConfiguration
         w.Write( TcpKeepAliveTimeSeconds );
         w.Write( TcpKeepAliveIntervalSeconds );
         w.Write( TcpKeepAliveRetryCount );
+
+        // v2
+        w.Write( NoDelay );
+        w.WriteNullableInt32( LingerSeconds );
+        w.WriteNullableInt32( SendBufferSize );
+        w.WriteNullableInt32( ReceiveBufferSize );
     }
 
     /// <summary>

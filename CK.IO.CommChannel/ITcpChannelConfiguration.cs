@@ -1,8 +1,15 @@
 using CK.Core;
 using System.ComponentModel;
+using System.Net.Sockets;
 
 namespace CK.IO.CommChannel;
 
+/// <summary>
+/// Describes the data shape of a TCP communication channel configuration: the remote
+/// <see cref="Host"/>/<see cref="Port"/>, TCP keep-alive settings, and the configurable
+/// socket options. This is an IO contract (no runtime dependency) that mirrors the
+/// runtime TcpChannelConfiguration.
+/// </summary>
 public interface ITcpChannelConfiguration : IPoco
 {
     /// <summary>
@@ -48,4 +55,25 @@ public interface ITcpChannelConfiguration : IPoco
     /// </summary>
     [DefaultValue( 10 )]
     public int TcpKeepAliveRetryCount { get; set; }
+
+    /// <summary>
+    /// Disables Nagle's algorithm (TCP_NODELAY) when true. Defaults to false.
+    /// </summary>
+    public bool NoDelay { get; set; }
+
+    /// <summary>
+    /// SO_LINGER timeout in seconds. Null = OS default (graceful close); 0 = abortive close (RST);
+    /// a positive value lingers up to that many seconds. Defaults to null.
+    /// </summary>
+    public int? LingerSeconds { get; set; }
+
+    /// <summary>
+    /// SO_SNDBUF send buffer size in bytes. Null = OS default. Defaults to null.
+    /// </summary>
+    public int? SendBufferSize { get; set; }
+
+    /// <summary>
+    /// SO_RCVBUF receive buffer size in bytes. Null = OS default. Defaults to null.
+    /// </summary>
+    public int? ReceiveBufferSize { get; set; }
 }
