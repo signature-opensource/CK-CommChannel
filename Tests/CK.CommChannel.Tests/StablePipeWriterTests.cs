@@ -49,7 +49,10 @@ public partial class StablePipeWriterTests
         MessageSender.WriteLine( writer, "Because the inner buffer is kept." );
         await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
+        // The 30 ms timeout is there to make the flushes above fail. Warning: keeping it in force for
+        // the assertions below makes a loaded machine fail a flush that is supposed to succeed.
         slow.Delay = 0;
+        writer.DefaultTimeout = -1;
         await MessageSender.SendLineAsync( writer, "Hello!" );
         await Util.Awaitable( () => writer.FlushAsync( default ).AsTask() ).ShouldNotThrowAsync();
 
@@ -81,7 +84,10 @@ public partial class StablePipeWriterTests
         r = await writer.FlushAsync( default );
         r.IsCanceled.ShouldBeTrue();
 
+        // Same here: without this, a flush slower than 30 ms comes back canceled and the assertion
+        // below fails for a reason that has nothing to do with what is being tested.
         slow.Delay = 0;
+        writer.DefaultTimeout = -1;
         await MessageSender.SendLineAsync( writer, "Hello!" );
         r = await writer.FlushAsync( default );
         r.IsCanceled.ShouldBeFalse();

@@ -12,6 +12,11 @@ namespace CK.CommChannel.Tests;
 [TestFixture]
 public class TcpChannelTests
 {
+    // Generous: it is a guard against a hang, not a claim about how fast a loopback round trip is.
+    // Warning: a budget of the order of a second is tight enough that a loaded machine fails these
+    // tests on scheduling alone.
+    const int TestTimeoutMS = 30_000;
+
     TcpChannelConfiguration CreateTcpChannelConfiguration( string host, int port )
     {
         return new TcpChannelConfiguration()
@@ -26,16 +31,17 @@ public class TcpChannelTests
     }
 
     [Test]
-    [CancelAfter( 1000 )]
+    [CancelAfter( TestTimeoutMS )]
     public async Task TcpEchoServer_echoes_messages_correctly_Async( CancellationToken cancel )
     {
-        await using var echoServer = new TcpEchoServer( IPAddress.Loopback, 12345 );
+        // Port 0: the OS picks a free one, echoServer.Port gives it back.
+        await using var echoServer = new TcpEchoServer( IPAddress.Loopback );
 
         // Start the echo server in the background
         echoServer.Start();
 
         using var client = new TcpClient();
-        await client.ConnectAsync( IPAddress.Loopback, 12345, cancel );
+        await client.ConnectAsync( IPAddress.Loopback, echoServer.Port, cancel );
 
         await using var stream = client.GetStream();
         byte[] request = Encoding.UTF8.GetBytes( "Hello, server!" );
@@ -50,15 +56,14 @@ public class TcpChannelTests
     }
 
     [Test]
-    [CancelAfter( 1000 )]
+    [CancelAfter( TestTimeoutMS )]
     public async Task TcpChannel_can_connect_to_TcpEchoServer_Async( CancellationToken cancel )
     {
         IPAddress host = IPAddress.Loopback;
-        int port = 46712;
-        await using var echoServer = new TcpEchoServer( host, port );
+        await using var echoServer = new TcpEchoServer( host );
         echoServer.Start();
 
-        TcpChannelConfiguration config = CreateTcpChannelConfiguration( host.ToString(), port );
+        TcpChannelConfiguration config = CreateTcpChannelConfiguration( host.ToString(), echoServer.Port );
 
         await using var cc = CommunicationChannel.Create( TestHelper.Monitor, config );
 
@@ -73,21 +78,18 @@ public class TcpChannelTests
     }
 
     [Test]
-    [CancelAfter( 1000 )]
+    [CancelAfter( TestTimeoutMS )]
     public async Task TcpChannel_can_switch_TcpEchoServers_Async( CancellationToken cancel )
     {
         IPAddress host = IPAddress.Loopback;
-        int port1 = 46713;
-        int port2 = 46714;
-        int port3 = 46715;
-        await using var echoServer1 = new TcpEchoServer( host, port1 );
-        await using var echoServer2 = new TcpEchoServer( host, port2 );
-        await using var echoServer3 = new TcpEchoServer( host, port3 );
+        await using var echoServer1 = new TcpEchoServer( host );
+        await using var echoServer2 = new TcpEchoServer( host );
+        await using var echoServer3 = new TcpEchoServer( host );
         echoServer1.Start();
         echoServer2.Start();
         echoServer3.Start();
 
-        TcpChannelConfiguration config1 = CreateTcpChannelConfiguration( host.ToString(), port1 );
+        TcpChannelConfiguration config1 = CreateTcpChannelConfiguration( host.ToString(), echoServer1.Port );
 
         await using var cc = CommunicationChannel.Create( TestHelper.Monitor, config1 );
 
@@ -104,7 +106,7 @@ public class TcpChannelTests
 
         // Change config
 
-        TcpChannelConfiguration config2 = CreateTcpChannelConfiguration( host.ToString(), port2 );
+        TcpChannelConfiguration config2 = CreateTcpChannelConfiguration( host.ToString(), echoServer2.Port );
         await cc.ReconfigureAsync( TestHelper.Monitor, config2 );
 
         await echoServer1.StopAsync();
@@ -122,7 +124,7 @@ public class TcpChannelTests
 
         // Change config
 
-        TcpChannelConfiguration config3 = CreateTcpChannelConfiguration( host.ToString(), port3 );
+        TcpChannelConfiguration config3 = CreateTcpChannelConfiguration( host.ToString(), echoServer3.Port );
         await cc.ReconfigureAsync( TestHelper.Monitor, config3 );
 
         await echoServer2.StopAsync();

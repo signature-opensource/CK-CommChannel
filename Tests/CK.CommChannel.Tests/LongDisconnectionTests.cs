@@ -2,9 +2,11 @@ using CK.Core;
 using Shouldly;
 using NUnit.Framework;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -13,10 +15,11 @@ namespace CK.CommChannel.Tests;
 [TestFixture]
 public class LongDisconnectionTests
 {
-    [TestCase( 3712 )]
-    public async Task disconnected_socket_Async( int port )
+    [Test]
+    [CancelAfter( 60_000 )]
+    public async Task disconnected_socket_Async( CancellationToken cancel )
     {
-        (CommunicationChannel client, ConnectionAvailabilityTracker tracker) = await OpenDisconnectedTcpChannelAsync( port )
+        (CommunicationChannel client, ConnectionAvailabilityTracker tracker) = await OpenDisconnectedTcpChannelAsync()
                                                                                      .ConfigureAwait( false );
         var writer = new StringLineMessageWriter( client.Writer, Encoding.UTF8 );
 
@@ -31,33 +34,26 @@ public class LongDisconnectionTests
         await Util.Awaitable( () => writer.WriteAsync( $"No more Server here... n°2.", default, timeout: 200 ).AsTask() )
             .ShouldThrowAsync<TimeoutException>();
 
-        while( client.ConnectionStatus != ConnectionAvailability.None )
-        {
-            TestHelper.Monitor.Info( "Waiting for 50ms." );
-            await Task.Delay( 50 );
-        }
+        // The decay to None goes through a few retries: how long that takes is not the point of this
+        // test, but it must have a way out if it never happens, hence the bounded wait.
+        await client.WaitForConnectionStatusAsync( ConnectionAvailability.None, cancel );
         await client.DisposeAsync();
 
-        // We may have the Connected event or not.
-        tracker.Events.Length.ShouldBeInRange( 3, 4 );
-        if( tracker.Events.Length == 3 )
-        {
-            tracker.Events.ShouldBe( [
-                    ConnectionAvailability.Low,
-                    ConnectionAvailability.DangerZone,
-                    ConnectionAvailability.None] );
-        }
-        else
-        {
-            tracker.Events.ShouldBe( [
-                    ConnectionAvailability.Connected,
-                    ConnectionAvailability.Low,
-                    ConnectionAvailability.DangerZone,
-                    ConnectionAvailability.None] );
-        }
+        // What this test is about is the decay, not how many steps it takes.
+        // Warning: do not assert the exact event array, nor its length. Whether the initial Connected
+        // is caught depends on how quickly the tracker was registered, and how many events the decay
+        // produces depends on how many reconnection attempts happen before the channel gives up.
+        var events = tracker.Events;
+        events.ShouldNotBeEmpty();
+        events[^1].ShouldBe( ConnectionAvailability.None, "The channel ends up giving up." );
+        events.ShouldContain( ConnectionAvailability.Low );
+        events.ShouldContain( ConnectionAvailability.DangerZone );
+        // ConnectionAvailability is ordered from None to Connected, and the server is gone for good:
+        // availability only ever degrades, it never climbs back.
+        events.Select( e => (int)e ).ShouldBeInOrder( SortDirection.Descending );
     }
 
-    static async Task<(CommunicationChannel,ConnectionAvailabilityTracker)> OpenDisconnectedTcpChannelAsync( int port )
+    static async Task<(CommunicationChannel,ConnectionAvailabilityTracker)> OpenDisconnectedTcpChannelAsync()
     {
         var server = new Socket( SocketType.Stream, ProtocolType.Tcp );
         server.Bind( new IPEndPoint( IPAddress.Any, 0 ) );

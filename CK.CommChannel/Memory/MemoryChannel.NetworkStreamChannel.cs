@@ -37,8 +37,12 @@ public sealed partial class MemoryChannel
 
         public async ValueTask DisposeAsync()
         {
+            // Both ends: a channel is bound to one or the other depending on
+            // MemoryChannelConfiguration.Reverted, and deallocating must break both.
+            // The end point side goes first so that a read pending on the channel side sees the close
+            // as an end of stream rather than as an aborted operation.
             await _endPointStream.DisposeAsync().ConfigureAwait( false );
-            await _endPointStream.DisposeAsync().ConfigureAwait( false );
+            await _channelStream.DisposeAsync().ConfigureAwait( false );
             // This is required.
             _client.Dispose();
             _server.Dispose();

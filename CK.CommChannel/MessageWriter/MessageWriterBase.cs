@@ -159,6 +159,13 @@ public abstract class MessageWriterBase<T>
             Throw.InvalidOperationException( "A WriteAsync is already executing." );
         }
 
+        // The lock is taken at most once (under firstTry below) and released once, in the outer
+        // finally. Releasing it in the inner finally instead would release it again on every retry:
+        // the goto out of the try runs that finally, but the retry skips the WaitAsync that would
+        // balance it. On a SemaphoreSlim(1,1) the second Release throws SemaphoreFullException, and a
+        // retrying writer must in any case keep the lock: its message is already in the PipeWriter's
+        // buffer, so letting another writer in would interleave the two.
+        bool lockTaken = false;
         try
         {
             TimeoutMessageException? timeoutEx = null;
@@ -188,7 +195,11 @@ public abstract class MessageWriterBase<T>
             {
                 if( firstTry )
                 {
-                    if( alock != null ) await alock.WaitAsync( t ).ConfigureAwait( false );
+                    if( alock != null )
+                    {
+                        await alock.WaitAsync( t ).ConfigureAwait( false );
+                        lockTaken = true;
+                    }
                     if( CommChannelMessageLogGates.MessageWriterLogGate.IsOpen ) WriteMessageToStaticLogger( message );
                     // If writing the message throws, this is not a communication error.
                     WriteMessage( message, _writer );
@@ -249,7 +260,6 @@ public abstract class MessageWriterBase<T>
             finally
             {
                 if( _ctsTimeout != null ) ReleaseTimeout( reg, ref _ctsTimeout );
-                if( alock != null ) alock.Release();
             }
 
             toThrow?.Throw();
@@ -258,6 +268,9 @@ public abstract class MessageWriterBase<T>
         }
         finally
         {
+            // alock, not _lock: MultipleWriters may have been set to false meanwhile, and what must be
+            // released is the very semaphore that was waited on.
+            if( lockTaken ) alock!.Release();
             Interlocked.Exchange( ref _writing, 0 );
         }
     }

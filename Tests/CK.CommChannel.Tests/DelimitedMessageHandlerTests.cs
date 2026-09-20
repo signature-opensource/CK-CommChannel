@@ -65,10 +65,11 @@ public class DelimitedMessageHandlerTests
     [TestCase( SendGarbageMode.WithGarbage, true )]
     [TestCase( SendGarbageMode.WithViciousGarbage, false )]
     [TestCase( SendGarbageMode.WithViciousGarbage, true )]
-    public async Task handling_messages_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte )
+    [CancelAfter( 30_000 )]
+    public async Task handling_messages_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte, CancellationToken cancel )
     {
-        var config = new MemoryChannelConfiguration() { EndPointName = "Test", DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
-        var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
+        await using var endPoint = TestMemoryEndPoint.AllocatePipe();
+        var config = new MemoryChannelConfiguration() { EndPointName = endPoint.Name, DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
         var channel = CommunicationChannel.Create( TestHelper.Monitor, config );
 
         await MessageSender.SendDelimitedMessagesAsync( endPoint.Input, 4, garbageMode, bytePerByte, startDelimiter:'#', endDelimiter: ";" );
@@ -76,29 +77,29 @@ public class DelimitedMessageHandlerTests
         var loop = new ExpectedNumberedMessagesHandler( channel.Reader );
 
         loop.StartReadLoop( maxMessage: 4 );
-        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
+        (await loop.StoppedReason.WaitAsync( cancel )).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
 
         loop.Number.ShouldBe( 4 );
 
         await MessageSender.SendLineAsync( endPoint.Input, "#Stop Loop!", bytePerByte, ";" );
 
         loop.StartReadLoop();
-        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
+        (await loop.StoppedReason.WaitAsync( cancel )).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
         loop.Number.ShouldBe( 5 );
 
-        await MemoryChannel.DeallocateAsync( "Test" );
     }
 
-    [TestCase( "None", true )]
-    [TestCase( "WithGarbage", true )]
-    [TestCase( "WithViciousGarbage", true )]
-    [TestCase( "None", false )]
-    [TestCase( "WithGarbage", false )]
-    [TestCase( "WithViciousGarbage", false )]
-    public async Task multiEnd_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte )
+    [TestCase( SendGarbageMode.None, true )]
+    [TestCase( SendGarbageMode.WithGarbage, true )]
+    [TestCase( SendGarbageMode.WithViciousGarbage, true )]
+    [TestCase( SendGarbageMode.None, false )]
+    [TestCase( SendGarbageMode.WithGarbage, false )]
+    [TestCase( SendGarbageMode.WithViciousGarbage, false )]
+    [CancelAfter( 30_000 )]
+    public async Task multiEnd_with_garbage_between_messages_Async( SendGarbageMode garbageMode, bool bytePerByte, CancellationToken cancel )
     {
-        var config = new MemoryChannelConfiguration() { EndPointName = "Test", DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
-        var endPoint = MemoryChannel.AllocatePipeChannel( "Test" );
+        await using var endPoint = TestMemoryEndPoint.AllocatePipe();
+        var config = new MemoryChannelConfiguration() { EndPointName = endPoint.Name, DefaultReadTimeout = -1, DefaultWriteTimeout = -1 };
         var channel = CommunicationChannel.Create( TestHelper.Monitor, config );
 
         await MessageSender.SendDelimitedMessagesAsync( endPoint.Input, 4, garbageMode, bytePerByte );
@@ -106,17 +107,16 @@ public class DelimitedMessageHandlerTests
         var loop = new ExpectedNumberedMessagesHandler( channel.Reader, startDelimiter: (byte)'#', endDelimiter: StringLineMessageReader.CRLF );
 
         loop.StartReadLoop( maxMessage: 4 );
-        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
+        (await loop.StoppedReason.WaitAsync( cancel )).ShouldBe( MessageHandlerCompletionReason.MaxMessageNumber );
 
         loop.Number.ShouldBe( 4 );
 
         await MessageSender.SendLineAsync( endPoint.Input, "#Stop Loop!" );
 
         loop.StartReadLoop();
-        (await loop.StoppedReason).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
+        (await loop.StoppedReason.WaitAsync( cancel )).ShouldBe( MessageHandlerCompletionReason.ProcessMessage );
         loop.Number.ShouldBe( 5 );
 
-        await MemoryChannel.DeallocateAsync( "Test" );
     }
 
 }

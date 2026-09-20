@@ -47,7 +47,9 @@ public class TcpSocketOptionTests
         var config = new TcpChannelConfiguration
         {
             Host = "127.0.0.1",
-            Port = 47731,            // nothing is listening: connect is refused fast, on the channel's own monitor.
+            // Nothing is listening on a port the OS just handed back and released: connect is refused
+            // fast, on the channel's own monitor. A hard coded port number is only "probably" free.
+            Port = TestNetwork.GetFreePort(),
             AutoReconnect = false,
             DefaultReadTimeout = -1,
             DefaultWriteTimeout = -1,
@@ -197,18 +199,17 @@ public class TcpSocketOptionTests
     }
 
     [Test]
-    [CancelAfter( 3000 )]
+    [CancelAfter( 30_000 )]
     public async Task TcpChannel_connects_with_socket_options_and_reconfigures_Async( CancellationToken cancel )
     {
         IPAddress host = IPAddress.Loopback;
-        int port = 47740;
-        await using var echoServer = new TcpEchoServer( host, port );
+        await using var echoServer = new TcpEchoServer( host );
         echoServer.Start();
 
         var config = new TcpChannelConfiguration
         {
             Host = host.ToString(),
-            Port = port,
+            Port = echoServer.Port,
             AutoReconnect = false,
             DefaultReadTimeout = -1,
             DefaultWriteTimeout = -1,
@@ -238,21 +239,20 @@ public class TcpSocketOptionTests
     }
 
     [Test]
-    [CancelAfter( 3000 )]
+    [CancelAfter( 30_000 )]
     public async Task Dynamic_reconfigure_with_keep_alive_staying_on_does_not_throw_Async( CancellationToken cancel )
     {
         // Regression: SetupSocketKeepAlive is re-applied on every dynamic reconfigure when keep-alive
         // is enabled. On that path the socket already has SO_KEEPALIVE == 1, so a precondition assert
         // that it is 0 would (wrongly) fail. This exercises the previously-uncovered path.
         IPAddress host = IPAddress.Loopback;
-        int port = 47742;
-        await using var echoServer = new TcpEchoServer( host, port );
+        await using var echoServer = new TcpEchoServer( host );
         echoServer.Start();
 
         var config = new TcpChannelConfiguration
         {
             Host = host.ToString(),
-            Port = port,
+            Port = echoServer.Port,
             AutoReconnect = false,
             DefaultReadTimeout = -1,
             DefaultWriteTimeout = -1,

@@ -12,35 +12,53 @@ public class TcpEchoServer : IAsyncDisposable
     readonly TcpListener _listener;
     readonly CancellationTokenSource _cts;
     Task? _serverTask;
+    int _stopped;
 
-    public TcpEchoServer( IPAddress ipAddress, int port )
+    /// <summary>
+    /// Initializes a new echo server. Port 0 (the default) lets the OS pick a free port that
+    /// <see cref="Port"/> exposes once <see cref="Start"/> has been called.
+    /// <para>
+    /// Warning: prefer port 0 to an explicit port number. A hard coded port fails the test whenever
+    /// anything else on the machine (including a concurrent run of this suite) happens to use it.
+    /// </para>
+    /// </summary>
+    public TcpEchoServer( IPAddress ipAddress, int port = 0 )
     {
         _listener = new TcpListener( ipAddress, port );
         _cts = new CancellationTokenSource();
     }
+
+    /// <summary>
+    /// Gets the port this server listens to. Only meaningful once <see cref="Start"/> has been called.
+    /// </summary>
+    public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
     public void Start()
     {
         _listener.Start();
         _serverTask = Task.Run( async () =>
         {
-            while( !_cts.Token.IsCancellationRequested )
+            try
             {
-                try
+                while( !_cts.IsCancellationRequested )
                 {
-                    var client = await _listener.AcceptTcpClientAsync();
+                    var client = await _listener.AcceptTcpClientAsync( _cts.Token );
                     _ = HandleClientAsync( client );
                 }
-                catch( SocketException )
-                {
-                    // Handle socket exceptions here
-                }
             }
+            // Stopping the listener is the normal way out of this loop.
+            // Warning: all three are needed. Which one the pending accept ends with depends on the
+            // platform and on the exact instant Stop() lands, and any that is not caught here faults
+            // _serverTask, which StopAsync then rethrows.
+            catch( OperationCanceledException ) { }
+            catch( ObjectDisposedException ) { }
+            catch( SocketException ) { }
         } );
     }
 
     public async Task StopAsync()
     {
+        if( Interlocked.Exchange( ref _stopped, 1 ) == 1 ) return;
         await _cts.CancelAsync();
         _listener.Stop();
         if( _serverTask is not null )
@@ -52,16 +70,6 @@ public class TcpEchoServer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await StopAsync();
-        _listener.Stop();
-        _cts.Dispose();
-    }
-
-    public void Dispose()
-    {
-#pragma warning disable VSTHRD002
-        StopAsync().GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
-        _listener.Stop();
         _cts.Dispose();
     }
 
@@ -82,7 +90,15 @@ public class TcpEchoServer : IAsyncDisposable
             }
             catch( IOException )
             {
-                // Handle IO exceptions here
+                // The client went away: nothing to do.
+            }
+            catch( OperationCanceledException )
+            {
+                // The server is stopping.
+            }
+            catch( ObjectDisposedException )
+            {
+                // The server is stopping.
             }
         }
     }

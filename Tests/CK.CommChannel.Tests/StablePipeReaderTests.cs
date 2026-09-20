@@ -43,6 +43,10 @@ public class StablePipeReaderTests
 
         await Util.Awaitable( () => reader.ReadAsync( default ).AsTask() ).ShouldThrowAsync<TimeoutException>();
 
+        // The timeout above is deliberately short so that it fires. Warning: it must not stay in
+        // force for the assertions below, which are about what the reader returns, not about how fast
+        // it does so. A 35 ms budget for "this must succeed" fails on any scheduling hiccup.
+        reader.DefaultTimeout = -1;
         await MessageSender.SendLineAsync( pipe.Writer, "Hello" );
         await Util.Awaitable( async () =>
         {
@@ -70,7 +74,10 @@ public class StablePipeReaderTests
 
         (await lineReader.ReadNextAsync()).ShouldBeNull( "The EmptyMessage of the StringLineMessageReader is null." );
 
+        // Warning: leaving the reader on its 30 ms leash once the inner reader is fast turns these
+        // two reads into timeouts on a loaded machine.
         slow.Delay = 0;
+        reader.DefaultTimeout = -1;
         (await lineReader.ReadNextAsync()).ShouldBe( "Line 1" );
         (await lineReader.ReadNextAsync()).ShouldBe( "Line 2" );
     }

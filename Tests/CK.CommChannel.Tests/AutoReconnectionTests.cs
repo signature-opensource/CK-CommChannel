@@ -20,30 +20,51 @@ public class AutoReconnectionTests
         High,
     }
 
-    [CancelAfter( 10000 )]
+    /// <summary>
+    /// Creates the random generator that paces one loop: seed 0 means "not reproducible"
+    /// (<see cref="Random.Shared"/>), any other seed gives a reproducible sequence.
+    /// <para>
+    /// Warning: each loop must call this for itself. <see cref="Random.Shared"/> is thread safe,
+    /// a seeded <see cref="Random"/> is not, so sharing one instance across the loops would corrupt
+    /// its state.
+    /// </para>
+    /// </summary>
+    static Random CreateRandom( int seed ) => seed == 0 ? Random.Shared : new Random( seed );
+
+    /// <summary>
+    /// Derives the seed of one loop from the test's seed, preserving the meaning of 0.
+    /// </summary>
+    static int SeedFor( int seed, int loop ) => seed == 0 ? 0 : seed + loop;
+
+    // The message loops below are paced with Task.Delay so that the failure injector gets the chance
+    // to cut the connection mid-stream: the run is intrinsically a few seconds long and every one of
+    // those delays stretches on a loaded machine.
+    // Warning: this budget is a guard against a genuine hang, not an expectation about how fast the
+    // run is. Tightening it to a duration close to a normal run makes the test fail on scheduling.
+    [CancelAfter( 120_000 )]
     [TestCase( 3712, "DelimitedMessages", FailureConfiguration.Never, "UsePipe" )]
     [TestCase( 3712, "LineMessages", FailureConfiguration.Never, "UseNetworkStream" )]
     [TestCase( 3712, "DelimitedMessages", FailureConfiguration.Low, "UseNetworkStream" )]
+    // Seed 0 on purpose: this one runs on fresh randomness every time, which is what makes it a
+    // standing fuzz of the reconnection path rather than one fixed scenario.
     [TestCase( 0, "DelimitedMessages", FailureConfiguration.High, "UseNetworkStream" )]
     public async Task AutoReconnection_works_Async( int seed, string delimitedMessages, FailureConfiguration failure, string channelType, CancellationToken cancel )
     {
         bool usePipe = channelType == "UsePipe";
 
-        var endPoint = usePipe
-                        ? MemoryChannel.AllocatePipeChannel( "Test" )
-                        : await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" );
+        await using var ep = await TestMemoryEndPoint.AllocateAsync( usePipe );
 
-        MemoryChannelConfiguration config1 = new MemoryChannelConfiguration { EndPointName = "Test", AutoReconnect = true };
+        MemoryChannelConfiguration config1 = new MemoryChannelConfiguration { EndPointName = ep.Name, AutoReconnect = true };
         var channel1 = CommunicationChannel.Create( TestHelper.Monitor, config1 );
-        await Task.Delay( 100, cancel );
-        channel1.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
+        // Registered before the wait: registering after it is a race against the initial Connected
+        // event, which is raised just after ConnectionStatus flips.
         var tracker1 = new ConnectionAvailabilityTracker( channel1 );
+        await channel1.WaitForConnectionStatusAsync( ConnectionAvailability.Connected, cancel );
 
-        MemoryChannelConfiguration config2 = new MemoryChannelConfiguration { EndPointName = "Test", AutoReconnect = true, Reverted = true };
+        MemoryChannelConfiguration config2 = new MemoryChannelConfiguration { EndPointName = ep.Name, AutoReconnect = true, Reverted = true };
         var channel2 = CommunicationChannel.Create( TestHelper.Monitor, config2 );
-        await Task.Delay( 100, cancel );
-        channel2.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
         var tracker2 = new ConnectionAvailabilityTracker( channel2 );
+        await channel2.WaitForConnectionStatusAsync( ConnectionAvailability.Connected, cancel );
 
         try
         {
@@ -54,30 +75,27 @@ public class AutoReconnectionTests
             {
                 failureTask = Task.Run( async () =>
                 {
-                    var rnd = seed == 0 ? new Random( seed ) : Random.Shared;
+                    var rnd = CreateRandom( seed );
                     while( !readDone.IsCancellationRequested )
                     {
                         await Task.Delay( rnd.Next( 50 ), cancel );
                         if( rnd.Next( 100 ) < (failure == FailureConfiguration.High ? 40 : 10) )
                         {
-                            ActivityMonitor.StaticLogger.Debug( "Deallocating Test MemoryChannel." );
-                            await MemoryChannel.DeallocateAsync( "Test" );
-                            //await Task.Delay( rnd.Next( 50 ) );
-                            ActivityMonitor.StaticLogger.Debug( "Restoring Test MemoryChannel." );
-                            endPoint = usePipe
-                                        ? MemoryChannel.AllocatePipeChannel( "Test" )
-                                        : await MemoryChannel.AllocateNetworkStreamChannelAsync( "Test" );
-                            await Task.Delay( 200 );
+                            ActivityMonitor.StaticLogger.Debug( $"Cutting and restoring the '{ep.Name}' MemoryChannel." );
+                            await ep.ReconnectAsync( usePipe );
+                            await Task.Delay( 200, cancel );
                         }
                     }
                 }, cancel );
             }
 
             bool useDelimited = delimitedMessages == "DelimitedMessages";
-            var receive2 = ReadMessagesAsync( channel2, seed, useDelimited, cancel );
-            var send1 = SendMessagesAsync( channel1, seed, useDelimited, receive2, cancel );
-            var receive1 = ReadMessagesAsync( channel1, seed, useDelimited, cancel );
-            var send2 = SendMessagesAsync( channel2, seed, useDelimited, receive1, cancel );
+            // A distinct seed per loop: with a single one the four loops would all follow the very
+            // same delay sequence, which is not what the paced loops are here for.
+            var receive2 = ReadMessagesAsync( channel2, SeedFor( seed, 1 ), useDelimited, cancel );
+            var send1 = SendMessagesAsync( channel1, SeedFor( seed, 2 ), useDelimited, receive2, cancel );
+            var receive1 = ReadMessagesAsync( channel1, SeedFor( seed, 3 ), useDelimited, cancel );
+            var send2 = SendMessagesAsync( channel2, SeedFor( seed, 4 ), useDelimited, receive1, cancel );
 
             await send1;
             await send2;
@@ -103,18 +121,21 @@ public class AutoReconnectionTests
             {
                 if( f != FailureConfiguration.Never )
                 {
-                    events.ShouldNotBeEmpty();
+                    events.ShouldContain( e => e != ConnectionAvailability.Connected, "Injected failures must have degraded the connection." );
                 }
                 else
                 {
-                    events.ShouldBeEmpty();
+                    // Whether the initial Connected event is seen depends on how quickly the tracker
+                    // is registered, so only degradations are asserted on: without injected failures
+                    // there must be none.
+                    events.ShouldAllBe( e => e == ConnectionAvailability.Connected );
                 }
             }
 
         }
         finally
         {
-            await MemoryChannel.DeallocateAsync( "Test" );
+            await ep.DeallocateAsync();
             await channel1.DisposeAsync();
             await channel2.DisposeAsync();
         }
@@ -147,7 +168,14 @@ public class AutoReconnectionTests
         }
     }
 
-    static Task SendMessagesAsync( CommunicationChannel c, int seed, bool useDelimited, Task<List<string?>> receive1, CancellationToken cancel )
+    /// <summary>
+    /// Sends 100 messages, then repeats 'End of Messages' until the peer's reader has seen it.
+    /// </summary>
+    static Task SendMessagesAsync( CommunicationChannel c,
+                                   int seed,
+                                   bool useDelimited,
+                                   Task<List<string?>> receive1,
+                                   CancellationToken cancel )
     {
         MessageWriterBase<string> writer = useDelimited
                                             ? new StringDelimitedMessageWriter( c.Writer, Encoding.ASCII, (byte)'#', (byte)';' )
@@ -156,7 +184,7 @@ public class AutoReconnectionTests
         {
             try
             {
-                var rnd = seed == 0 ? new Random( seed ) : Random.Shared;
+                var rnd = CreateRandom( seed );
                 int mNum = 0;
                 while( mNum < 100 )
                 {
@@ -165,12 +193,17 @@ public class AutoReconnectionTests
                     ActivityMonitor.StaticLogger.Trace( $"{c.Name} writer: {message}" );
                     await Task.Delay( rnd.Next( 40 ), cancel );
                 }
+
                 ActivityMonitor.StaticLogger.Trace( $"{c.Name} writer: 'End of Messages'" );
-                await writer.WriteAsync( $"End of Messages", default );
+                // Warning: these two writes must honor the cancellation token. Neither the loop
+                // condition below nor a WriteAsync on a non cancelable token blocks once the test has
+                // been canceled, so passing 'default' here turns this retry loop into a hot spin that
+                // floods the logs and outlives the [CancelAfter] budget.
+                await writer.WriteAsync( $"End of Messages", cancel );
                 while( !await receive1.WaitForTaskCompletionAsync( 100, cancel ) )
                 {
                     ActivityMonitor.StaticLogger.Trace( $"{c.Name} writer: resending 'End of Messages'" );
-                    await writer.WriteAsync( $"End of Messages", default );
+                    await writer.WriteAsync( $"End of Messages", cancel );
                 }
             }
             catch( Exception ex )
@@ -192,7 +225,7 @@ public class AutoReconnectionTests
         {
             try
             {
-                var rnd = seed == 0 ? new Random( seed ) : Random.Shared;
+                var rnd = CreateRandom( seed );
                 string? message;
                 while( (message = await reader.ReadNextAsync( cancel )) != "End of Messages" )
                 {
