@@ -1,0 +1,1 @@
+The IO contracts of the CK.CommChannel communication channels, without runtime dependency: the ITcpChannelConfiguration and ISerialChannelConfiguration Poco, and the Parity, StopBits, Handshake and ConnectionAvailability enumerations.
