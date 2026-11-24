@@ -82,7 +82,8 @@ public class LongDisconnectionTests
             await client.Writer.WriteAsync( Encoding.UTF8.GetBytes( "Client => Server.\r\n" ) ).ConfigureAwait( false );
             var buffer = new byte[256];
             int lenRead = await serverSocket.ReceiveAsync( buffer.AsMemory(), SocketFlags.None ).ConfigureAwait( false );
-            Encoding.UTF8.GetString( buffer, 0, lenRead ).ShouldBe( "Client => Server.\r\n" );
+            // The comparer makes the comparison exact: ShouldBe( string ) ignores the newline style.
+            Encoding.UTF8.GetString( buffer, 0, lenRead ).ShouldBe( "Client => Server.\r\n", StringComparer.Ordinal );
         }
         TestHelper.Monitor.Info( "Dispose the Server socket." );
         serverSocket.Dispose();
