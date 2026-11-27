@@ -25,14 +25,24 @@ public class LongDisconnectionTests
 
         client.ConnectionStatus.ShouldBe( ConnectionAvailability.Connected );
 
-        TestHelper.Monitor.Info( "The first write doesn't detect anything. Why?" );
-        await writer.WriteAsync( $"No more Server here... n°1.", default );
-
-        TestHelper.Monitor.Info( "The second one receives an IOException. (TimeOut: 200ms)" );
-        // The call is now waiting for a new channel implementation.
-        // We need a timeout to exit.
-        await Util.Awaitable( () => writer.WriteAsync( $"No more Server here... n°2.", default, timeout: 200 ).AsTask() )
-            .ShouldThrowAsync<TimeoutException>();
+        // After the peer closed, a write succeeds until the OS has reported the loss. How many writes that takes
+        // depends on the OS and on timing: one on Windows, any number on Linux when they follow each other at once.
+        // Once the loss is detected the channel waits for a reconnection that cannot happen: the write times out.
+        TestHelper.Monitor.Info( "Writing until the loss is detected: the write then times out (200 ms)." );
+        var detected = false;
+        for( int i = 1; i <= 500 && !detected; i++ )
+        {
+            try
+            {
+                await writer.WriteAsync( $"No more Server here... n°{i}.", default, timeout: 200 );
+                await Task.Delay( 2, cancel );
+            }
+            catch( TimeoutException )
+            {
+                detected = true;
+            }
+        }
+        detected.ShouldBeTrue( "A write must end up detecting the loss." );
 
         // The decay to None goes through a few retries: how long that takes is not the point of this
         // test, but it must have a way out if it never happens, hence the bounded wait.
