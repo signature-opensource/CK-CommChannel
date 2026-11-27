@@ -129,6 +129,9 @@ public sealed partial class CommunicationChannel
             // NEVER throws.
             // Since we cannot wait for the outcome, we decide here and now the AutoConnect status.
             bool autoReconnect = _c.AutoReconnect;
+            // Without reconnection the other pipe is completed too, like for a lost connection (see OnError):
+            // only closed, its next operation would wait for a reconnection that cannot come.
+            if( !autoReconnect ) (_pipe == _c._reader ? (IStablePipe)_c._writer : _c._reader).Complete();
             _ = _c.OnInnerCompletedAsync( _pipe, autoReconnect );
             return autoReconnect ? OnInnerCompletedAction.Retry : OnInnerCompletedAction.Complete;
         }

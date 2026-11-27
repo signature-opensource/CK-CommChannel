@@ -83,6 +83,52 @@ public class ConnectionLostTests
 
     [Test]
     [CancelAfter( 30_000 )]
+    public async Task without_AutoReconnect_an_end_of_stream_seen_by_the_reader_completes_the_writer_too_Async( CancellationToken cancel )
+    {
+        await using var ep = TestMemoryEndPoint.AllocatePipe();
+        var channel = CreateWithoutAutoReconnect( ep );
+        var reader = new StringLineMessageReader( channel.Reader, Encoding.ASCII );
+
+        var read = reader.ReadNextAsync( cancel ).AsTask();
+        // The peer closes its side: the pending read of the channel sees an end of stream.
+        ep.Input.Complete();
+
+        (await read).ShouldBeNull();
+        reader.IsCompleted.ShouldBeTrue();
+        channel.Reader.CompleteException.ShouldBeNull();
+
+        // Same outcome as a reset: the writer is completed too, a write does not wait for a reconnection
+        // that cannot come (it has no timeout here).
+        channel.Writer.IsCompleted.ShouldBeTrue();
+        (await new StringLineMessageWriter( channel.Writer, Encoding.ASCII ).WriteAsync( "After.", cancel )).ShouldBeFalse();
+        await channel.DisposeAsync();
+    }
+
+    [Test]
+    [CancelAfter( 30_000 )]
+    public async Task without_AutoReconnect_an_end_of_stream_seen_by_the_writer_completes_the_reader_too_Async( CancellationToken cancel )
+    {
+        await using var ep = TestMemoryEndPoint.AllocatePipe();
+        var channel = CreateWithoutAutoReconnect( ep );
+        var writer = new StringLineMessageWriter( channel.Writer, Encoding.ASCII );
+        var reader = new StringLineMessageReader( channel.Reader, Encoding.ASCII );
+        // A read is pending: it does not see the close, the write does.
+        var read = reader.ReadNextAsync( cancel ).AsTask();
+
+        // The peer stops reading: the next flush of the channel sees a completed pipe.
+        ep.EndPoint.Output.Complete();
+
+        (await writer.WriteAsync( "Lost.", cancel )).ShouldBeFalse();
+        channel.Writer.IsCompleted.ShouldBeTrue();
+
+        // The reader is completed too: its pending read ends with the empty message.
+        (await read).ShouldBeNull();
+        reader.IsCompleted.ShouldBeTrue();
+        await channel.DisposeAsync();
+    }
+
+    [Test]
+    [CancelAfter( 30_000 )]
     public async Task without_AutoReconnect_an_error_that_is_not_a_lost_connection_is_thrown_Async( CancellationToken cancel )
     {
         await using var ep = TestMemoryEndPoint.AllocatePipe();

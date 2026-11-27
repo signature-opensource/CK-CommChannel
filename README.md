@@ -60,17 +60,15 @@ using ICommunicationChannel channel = await CommunicationChannel.OpenAsync( moni
 
 With `AutoReconnect = true`, the channel reopens the connection: a read or a write waits for it (up to its timeout).
 
-With `AutoReconnect = false`, a lost connection ends the channel:
+With `AutoReconnect = false`, a lost connection ends the channel: the reader and the writer are both completed. A message
+reader returns its empty message, a message writer returns false. This is the same whether the operating system reports
+an end of stream, a reset or an aborted operation (which one it reports depends on the system and on timing).
 
-- The reader or the writer that detects the loss is completed: a message reader returns its empty message, a message
-  writer returns false. This is the same whether the operating system reports an end of stream, a reset or an aborted
-  operation (which one it reports depends on the system and on timing).
-- When the loss is an `IOException` or a `SocketException` (a reset, an aborted operation), the other one is completed
-  too and `CompleteException` holds the exception (at least on the one that detected it). An `IOException` thrown by a
-  message parser counts as such a loss.
-- When the loss is an end of stream, the other one is only closed: its next operation waits, up to its timeout.
+When the loss is an `IOException` or a `SocketException` (a reset, an aborted operation), `CompleteException` holds the
+exception (at least on the one that detected it); it is null after an end of stream. An `IOException` thrown by a
+message parser counts as such a loss. Any other exception is thrown.
 
-Any other exception is thrown. A completed reader or writer cannot be used again: dispose the channel and create a new one.
+A completed reader or writer cannot be used again: dispose the channel and create a new one.
 
 ### Connecting to a serial port (needs `CK.CommChannel.Serial` package)
 
