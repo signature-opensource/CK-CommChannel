@@ -68,6 +68,16 @@ public sealed partial class CommunicationChannel
             //    we'll simply lose the log. That is by design.
             if( _c._disposed != 0 || !_c.AutoReconnect )
             {
+                // The connection is lost and nothing will reopen it. This ends like an end of stream (see OnInnerCompleted),
+                // whatever the signal of the OS was (a reset, an abort): the culprit is completed, the exception is its cause.
+                // Retry returns the completed result. The culprit is completed first: Complete records the cause only when it closes.
+                if( _c._disposed == 0 && exception is System.IO.IOException or System.Net.Sockets.SocketException )
+                {
+                    _pipe.Complete( exception );
+                    (_pipe == _c._reader ? (IStablePipe)_c._writer : _c._reader).Close( false );
+                    _ = _c.OnInnerCompletedAsync( _pipe, false, exception );
+                    return OnErrorAction.Retry;
+                }
                 _c._monitor.ParallelLogger.Error( $"Error on {_c.Name} {(_pipe == _c.Reader ? "reader" : "writer")}. Exception is thrown since AutoReconnect is false.", exception );
                 return OnErrorAction.Throw;
             }

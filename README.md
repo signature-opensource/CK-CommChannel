@@ -56,6 +56,15 @@ var config = new TcpChannelConfiguration()
 using ICommunicationChannel channel = await CommunicationChannel.OpenAsync( monitor, config );
 ```
 
+### When the connection is lost
+
+With `AutoReconnect = true`, the channel reopens the connection: a read or a write waits for it (up to its timeout).
+
+With `AutoReconnect = false`, a lost connection completes the pipe: a message reader returns its empty message, a message
+writer returns false. This is the same whether the operating system reports an end of stream, a reset or an aborted
+operation (which one it reports depends on the system and on timing). When the loss came as an `IOException` or a
+`SocketException`, the `CompleteException` of the reader or writer holds it. Any other exception is thrown.
+
 ### Connecting to a serial port (needs `CK.CommChannel.Serial` package)
 
 ```csharp

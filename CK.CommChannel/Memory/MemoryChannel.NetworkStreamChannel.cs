@@ -39,8 +39,9 @@ public sealed partial class MemoryChannel
         {
             // Both ends: a channel is bound to one or the other depending on
             // MemoryChannelConfiguration.Reverted, and deallocating must break both.
-            // The end point side goes first so that a read pending on the channel side sees the close
-            // as an end of stream rather than as an aborted operation.
+            // The end point side goes first: on Windows a read pending on the channel side then sees the close
+            // as an end of stream. On Linux the dispose of the channel side below aborts that read before it
+            // sees the end of stream. A CommunicationChannel gives both the same outcome (see its Behavior.OnError).
             await _endPointStream.DisposeAsync().ConfigureAwait( false );
             await _channelStream.DisposeAsync().ConfigureAwait( false );
             // This is required.

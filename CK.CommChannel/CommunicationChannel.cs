@@ -335,13 +335,21 @@ public sealed partial class CommunicationChannel
     }
 
     // Fired & Forgot: this MUST never throw.
-    async Task OnInnerCompletedAsync( IStablePipe culprit, bool autoReconnect )
+    // The error is the lost connection that ends the culprit like a completed inner pipe (only without AutoReconnect).
+    async Task OnInnerCompletedAsync( IStablePipe culprit, bool autoReconnect, Exception? error = null )
     {
         try
         {
             if( await EnterLockAsync().ConfigureAwait( false ) )
             {
-                _monitor.Error( $"{Name} {(culprit == _reader ? "read" : "writ")}er inner pipe completed. AutoReconnect is {autoReconnect}." );
+                if( error == null )
+                {
+                    _monitor.Error( $"{Name} {(culprit == _reader ? "read" : "writ")}er inner pipe completed. AutoReconnect is {autoReconnect}." );
+                }
+                else
+                {
+                    _monitor.Error( $"{Name} {(culprit == _reader ? "read" : "writ")}er connection lost. AutoReconnect is {autoReconnect}.", error );
+                }
                 if( autoReconnect )
                 {
                     await DoReopenAsync( _monitor );
