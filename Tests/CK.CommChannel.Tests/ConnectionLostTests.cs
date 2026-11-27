@@ -46,6 +46,13 @@ public class ConnectionLostTests
         reader.IsCompleted.ShouldBeTrue();
         channel.Reader.CompleteException.ShouldBeSameAs( lost );
         (await reader.ReadNextAsync( cancel )).ShouldBeNull();
+
+        // The writer did not detect the loss. It is completed too: a write does not wait for a reconnection
+        // that cannot come (it has no timeout here).
+        channel.Writer.IsCompleted.ShouldBeTrue();
+        (await new StringLineMessageWriter( channel.Writer, Encoding.ASCII ).WriteAsync( "After.", cancel )).ShouldBeFalse();
+        // The channel is closed, its implementation is disposed: it is no longer Connected.
+        await channel.WaitForConnectionStatusAsync( ConnectionAvailability.Low, cancel );
         await channel.DisposeAsync();
     }
 
@@ -56,6 +63,9 @@ public class ConnectionLostTests
         await using var ep = TestMemoryEndPoint.AllocatePipe();
         var channel = CreateWithoutAutoReconnect( ep );
         var writer = new StringLineMessageWriter( channel.Writer, Encoding.ASCII );
+        var reader = new StringLineMessageReader( channel.Reader, Encoding.ASCII );
+        // A read is pending: it does not detect the loss, the write does.
+        var read = reader.ReadNextAsync( cancel ).AsTask();
 
         var lost = Lost( SocketError.Shutdown );
         // The next flush of the channel fails with this exception.
@@ -64,6 +74,10 @@ public class ConnectionLostTests
         (await writer.WriteAsync( "Lost.", cancel )).ShouldBeFalse();
         channel.Writer.IsCompleted.ShouldBeTrue();
         channel.Writer.CompleteException.ShouldBeSameAs( lost );
+
+        // The reader is completed too: its pending read ends with the empty message.
+        (await read).ShouldBeNull();
+        reader.IsCompleted.ShouldBeTrue();
         await channel.DisposeAsync();
     }
 
